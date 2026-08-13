@@ -256,15 +256,6 @@
       <h2>Recent activity</h2>
       <div class="list" id="recentList" style="gap:0;"></div>
     </div>
-
-    <!-- <div class="panel glass">
-      <h2>Backup</h2>
-      <div style="display:flex;gap:8px;">
-        <button id="exportBtn" type="button" class="icon-btn" style="flex:1;padding:10px;font-size:13px;">Export data</button>
-        <button id="importBtn" type="button" class="icon-btn" style="flex:1;padding:10px;font-size:13px;">Import data</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none;">
-      </div>
-    </div> -->
   </div>
 
   <!-- SALARY -->
@@ -408,15 +399,6 @@ function initials(name){
   return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
 }
 
-function allMonthKeys(){
-  const keys = [];
-  for(let i=0;i<localStorage.length;i++){
-    const k = localStorage.key(i);
-    if(k && k.startsWith("flow:") && k !== accountsKey) keys.push(k);
-  }
-  return keys.sort();
-}
-
 function loadAccounts(){
   try{
     const raw = localStorage.getItem(accountsKey);
@@ -492,37 +474,6 @@ async function loadMonth(ym){
 async function save(){
   try{ localStorage.setItem(storageKey, JSON.stringify(state)); }
   catch(e){ console.error("Storage error", e); alert("Could not save — your browser storage may be full or blocked."); }
-}
-
-function exportData(){
-  const data = {};
-  allMonthKeys().forEach(k=>{ data[k] = JSON.parse(localStorage.getItem(k)); });
-  const accRaw = localStorage.getItem(accountsKey);
-  if(accRaw) data[accountsKey] = JSON.parse(accRaw);
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "flow-backup-" + new Date().toISOString().slice(0,10) + ".json";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function importData(file){
-  const reader = new FileReader();
-  reader.onload = () => {
-    try{
-      const data = JSON.parse(reader.result);
-      Object.keys(data).forEach(k=>{
-        if(k.startsWith("flow:")) localStorage.setItem(k, JSON.stringify(data[k]));
-      });
-      loadMonth(currentMonth);
-      loadAccounts();
-      alert("Backup restored.");
-    }catch(e){
-      alert("That file could not be read as a Flow backup.");
-    }
-  };
-  reader.readAsText(file);
 }
 
 function goto(page){
@@ -791,13 +742,6 @@ document.getElementById("nextMonth").addEventListener("click", ()=>{
   const [y,m] = currentMonth.split("-").map(Number);
   currentMonth = new Date(y, m, 1).toISOString().slice(0,7);
   loadMonth(currentMonth);
-});
-
-document.getElementById("exportBtn").addEventListener("click", exportData);
-document.getElementById("importBtn").addEventListener("click", ()=>document.getElementById("importFile").click());
-document.getElementById("importFile").addEventListener("change", (e)=>{
-  if(e.target.files[0]) importData(e.target.files[0]);
-  e.target.value = "";
 });
 
 loadMonth(currentMonth);
