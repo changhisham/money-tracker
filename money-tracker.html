@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow — Money Tracker</title>
+<style>
+  :root{
+    --bg:#FAF7F1;
+    --card:#FFFFFF;
+    --ink:#22262B;
+    --sub:#8A8578;
+    --line:#ECE7DB;
+
+    --salary:#1E9E6B;   --salary-bg:#E4F5EC;
+    --commit:#7C5CFC;   --commit-bg:#EFEAFF;
+    --expense:#E2583A;  --expense-bg:#FCEAE5;
+    --saving:#2F6FED;   --saving-bg:#E7F0FE;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    padding:24px 16px 90px;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .dot{width:14px;height:14px;border-radius:50%;background:conic-gradient(var(--salary),var(--saving),var(--commit),var(--expense));}
+  .brand h1{font-size:20px;margin:0;letter-spacing:-0.02em;font-weight:800;}
+  .month-nav{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 8px;}
+  .month-nav button{border:none;background:none;font-size:15px;cursor:pointer;color:var(--sub);width:22px;height:22px;border-radius:50%;}
+  .month-nav button:hover{background:var(--bg);color:var(--ink);}
+  .month-nav span{font-size:13px;font-weight:700;min-width:78px;text-align:center;}
+
+  .page{display:none;}
+  .page.on{display:block;}
+
+  /* ---- Dashboard ---- */
+  .balance-card{
+    background:var(--ink);color:#fff;border-radius:22px;padding:22px 22px 20px;margin-bottom:16px;
+    position:relative;overflow:hidden;
+  }
+  .balance-card .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#c9c5b8;font-weight:700;}
+  .balance-card .amount{font-size:38px;font-weight:800;letter-spacing:-0.02em;margin:4px 0 14px;}
+  .balance-bar{display:flex;height:8px;border-radius:6px;overflow:hidden;background:#3a3d33;}
+  .balance-bar div{height:100%;}
+  .balance-legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;}
+  .balance-legend span{font-size:11px;color:#c9c5b8;display:flex;align-items:center;gap:5px;}
+  .balance-legend i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .stat{border-radius:16px;padding:14px 15px;cursor:pointer;border:1px solid transparent;transition:transform .12s ease;}
+  .stat:active{transform:scale(0.98);}
+  .stat .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .stat .name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .stat .amt{font-size:21px;font-weight:800;letter-spacing:-0.01em;}
+  .stat .sub{font-size:11px;margin-top:2px;opacity:.75;}
+  .stat.salary{background:var(--salary-bg);color:var(--salary);}
+  .stat.commit{background:var(--commit-bg);color:var(--commit);}
+  .stat.expense{background:var(--expense-bg);color:var(--expense);}
+  .stat.saving{background:var(--saving-bg);color:var(--saving);}
+  .icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.6);font-size:13px;}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px;}
+  .panel h2{font-size:14px;margin:0 0 12px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+
+  .recent-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);}
+  .recent-row:last-child{border-bottom:none;}
+  .recent-row .badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 7px;border-radius:6px;margin-right:8px;}
+  .recent-row .rmain{display:flex;align-items:center;min-width:0;}
+  .recent-row .rname{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .recent-row .ramt{font-size:13px;font-weight:800;flex-shrink:0;margin-left:10px;}
+
+  /* ---- Page header (non-dashboard pages) ---- */
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .page-head h2{font-size:19px;font-weight:800;margin:0;letter-spacing:-0.01em;}
+  .page-summary{display:flex;gap:10px;margin-bottom:16px;}
+  .mini-stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .mini-stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);font-weight:700;}
+  .mini-stat .v{font-size:17px;font-weight:800;margin-top:3px;}
+
+  /* ---- Forms ---- */
+  form.add-form{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;}
+  form.add-form input, form.add-form select{
+    border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 11px;font-size:13px;color:var(--ink);outline:none;
+  }
+  form.add-form input:focus, form.add-form select:focus{border-color:var(--ink);}
+  form.add-form input[name="name"]{flex:1 1 140px;min-width:0;}
+  form.add-form input[name="amount"]{width:90px;}
+  form.add-form input[name="dueDay"]{width:70px;}
+  form.add-form select{flex:1 1 110px;}
+  form.add-form button{
+    border:none;background:var(--ink);color:#fff;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;
+  }
+  form.add-form button:hover{opacity:.85;}
+  .err{width:100%;font-size:12px;color:var(--expense);display:none;}
+
+  /* ---- Lists ---- */
+  .list{display:flex;flex-direction:column;gap:1px;}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--line);gap:10px;}
+  .row:last-child{border-bottom:none;}
+  .row .left{display:flex;align-items:center;gap:12px;min-width:0;}
+  .row .rname{font-size:14px;font-weight:700;}
+  .row .rmeta{font-size:11px;color:var(--sub);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .row .rmeta .badge{padding:2px 6px;border-radius:5px;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.02em;}
+  .row .ramt{font-size:14px;font-weight:800;margin-right:2px;white-space:nowrap;}
+  .row .right{display:flex;align-items:center;gap:4px;}
+  .row button.del{border:none;background:none;color:var(--sub);cursor:pointer;font-size:15px;padding:4px 6px;}
+  .row button.del:hover{color:var(--expense);}
+  .empty{font-size:13px;color:var(--sub);text-align:center;padding:26px 0;}
+
+  .check{
+    width:22px;height:22px;border-radius:7px;border:2px solid var(--line);flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;
+  }
+  .check.checked{background:var(--commit);border-color:var(--commit);}
+  .row.paid .rname, .row.paid .ramt{opacity:.45;text-decoration:line-through;}
+
+  /* ---- Bottom nav ---- */
+  .navbar{
+    position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);
+    display:flex;justify-content:center;padding:8px 10px calc(8px + env(safe-area-inset-bottom));z-index:10;
+  }
+  .navbar-inner{display:flex;gap:2px;max-width:640px;width:100%;}
+  .navitem{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:12px;
+    background:none;border:none;cursor:pointer;color:var(--sub);
+  }
+  .navitem .ic{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;}
+  .navitem .lb{font-size:10px;font-weight:700;}
+  .navitem.on{color:var(--ink);}
+  .navitem.on .ic{outline:2px solid var(--ink);outline-offset:2px;}
+
+  .footer-note{text-align:center;font-size:11px;color:var(--sub);margin-top:22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand"><span class="dot"></span><h1>Flow</h1></div>
+    <div class="month-nav">
+      <button id="prevMonth">‹</button>
+      <span id="monthLabel">—</span>
+      <button id="nextMonth">›</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page on" id="page-dashboard">
+    <div class="balance-card">
+      <div class="label">Left to spend this month</div>
+      <div class="amount" id="balanceAmt">RM 0</div>
+      <div class="balance-bar" id="balanceBar"></div>
+      <div class="balance-legend">
+        <span><i style="background:var(--commit)"></i>Commitments</span>
+        <span><i style="background:var(--expense)"></i>Expenses</span>
+        <span><i style="background:var(--saving)"></i>Savings</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="stat salary" data-goto="salary">
+        <div class="top-row"><span class="name">Salary</span><span class="icon">＋</span></div>
+        <div class="amt" id="sumSalary">RM 0</div>
+        <div class="sub">income this month</div>
+      </div>
+      <div class="stat commit" data-goto="commit">
+        <div class="top-row"><span class="name">Commitments</span><span class="icon">↻</span></div>
+        <div class="amt" id="sumCommit">RM 0</div>
+        <div class="sub" id="commitProgress">0 of 0 paid</div>
+      </div>
+      <div class="stat expense" data-goto="expense">
+        <div class="top-row"><span class="name">Expenses</span><span class="icon">−</span></div>
+        <div class="amt" id="sumExpense">RM 0</div>
+        <div class="sub">daily spending</div>
+      </div>
+      <div class="stat saving" data-goto="saving">
+        <div class="top-row"><span class="name">Savings</span><span class="icon">◆</span></div>
+        <div class="amt" id="sumSaving">RM 0</div>
+        <div class="sub">set aside</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Recent activity</h2>
+      <div class="list" id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- SALARY -->
+  <div class="page" id="page-salary">
+    <div class="page-head"><h2>Salary</h2></div>
+    <div class="page-summary">
+      <div class="mini-stat"><div class="l">Total income</div><div class="v" id="salaryTotal" style="color:var(--salary)">RM 0</div></div>
+      <div class="mini-stat"><div class="l">Entries</div><div class="v" id="salaryCount">0</div></div>
+    </div>
+    <form class="add-form" id="form-salary" data-tab="salary">
+      <input type="text" name="name" placeholder="e.g. Monthly salary" autocomplete="off" required>
+      <input type="number" name="amount" placeholder="RM" min="0" step="0.01" required>
+      <button type="submit">Add</button>
+      <div class="err"></div>
+    </form>
+    <div class="panel"><div class="list" id="list-salary"></div></div>
+  </div>
+
+  <!-- COMMITMENTS -->
+  <div class="page" id="page-commit">
+    <div class="page-head"><h2>Commitments</h2></div>
+    <div class="page-summary">
+      <div class="mini-stat"><div class="l">Total committed</div><div class="v" id="commitTotal" style="color:var(--commit)">RM 0</div></div>
+      <div class="mini-stat"><div class="l">Paid</div><div class="v" id="commitPaidAmt" style="color:var(--salary)">RM 0</div></div>
+      <div class="mini-stat"><div class="l">Pending</div><div class="v" id="commitPendingAmt" style="color:var(--expense)">RM 0</div></div>
+    </div>
+    <form class="add-form" id="form-commit" data-tab="commit">
+      <input type="text" name="name" placeholder="e.g. Rent, phone bill" autocomplete="off" required>
+      <input type="number" name="amount" placeholder="RM" min="0" step="0.01" required>
+      <input type="number" name="dueDay" placeholder="Due day" min="1" max="31">
+      <select name="category">
+        <option value="Housing">Housing</option>
+        <option value="Loan">Loan</option>
+        <option value="Subscription">Subscription</option>
+        <option value="Insurance">Insurance</option>
+        <option value="Utility">Utility</option>
+        <option value="Other">Other</option>
+      </select>
+      <button type="submit">Add</button>
+      <div class="err"></div>
+    </form>
+    <div class="panel">
+      <h2>Checklist — tap to mark paid</h2>
+      <div class="list" id="list-commit"></div>
+    </div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="page" id="page-expense">
+    <div class="page-head"><h2>Daily expenses</h2></div>
+    <div class="page-summary">
+      <div class="mini-stat"><div class="l">Total spent</div><div class="v" id="expenseTotal" style="color:var(--expense)">RM 0</div></div>
+      <div class="mini-stat"><div class="l">Entries</div><div class="v" id="expenseCount">0</div></div>
+    </div>
+    <form class="add-form" id="form-expense" data-tab="expense">
+      <input type="text" name="name" placeholder="e.g. Lunch, groceries" autocomplete="off" required>
+      <input type="number" name="amount" placeholder="RM" min="0" step="0.01" required>
+      <select name="category">
+        <option value="Food">Food</option>
+        <option value="Transport">Transport</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Bills">Bills</option>
+        <option value="Other">Other</option>
+      </select>
+      <button type="submit">Add</button>
+      <div class="err"></div>
+    </form>
+    <div class="panel"><div class="list" id="list-expense"></div></div>
+  </div>
+
+  <!-- SAVINGS -->
+  <div class="page" id="page-saving">
+    <div class="page-head"><h2>Savings</h2></div>
+    <div class="page-summary">
+      <div class="mini-stat"><div class="l">Total saved</div><div class="v" id="savingTotal" style="color:var(--saving)">RM 0</div></div>
+      <div class="mini-stat"><div class="l">Entries</div><div class="v" id="savingCount">0</div></div>
+    </div>
+    <form class="add-form" id="form-saving" data-tab="saving">
+      <input type="text" name="name" placeholder="e.g. Emergency fund" autocomplete="off" required>
+      <input type="number" name="amount" placeholder="RM" min="0" step="0.01" required>
+      <button type="submit">Add</button>
+      <div class="err"></div>
+    </form>
+    <div class="panel"><div class="list" id="list-saving"></div></div>
+  </div>
+
+  <div class="footer-note">Your entries are saved privately to this tracker.</div>
+</div>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <button class="navitem on" data-page="dashboard"><span class="ic" style="background:var(--ink)">H</span><span class="lb">Home</span></button>
+    <button class="navitem" data-page="salary"><span class="ic" style="background:var(--salary)">＋</span><span class="lb">Salary</span></button>
+    <button class="navitem" data-page="commit"><span class="ic" style="background:var(--commit)">↻</span><span class="lb">Commit</span></button>
+    <button class="navitem" data-page="expense"><span class="ic" style="background:var(--expense)">−</span><span class="lb">Expense</span></button>
+    <button class="navitem" data-page="saving"><span class="ic" style="background:var(--saving)">◆</span><span class="lb">Saving</span></button>
+  </div>
+</nav>
+
+<script>
+const CATS = {
+  salary:  { color:"var(--salary)",  bg:"var(--salary-bg)" },
+  commit:  { color:"var(--commit)",  bg:"var(--commit-bg)" },
+  expense: { color:"var(--expense)", bg:"var(--expense-bg)" },
+  saving:  { color:"var(--saving)",  bg:"var(--saving-bg)" },
+};
+
+let state = { salary: [], commit: [], expense: [], saving: [] };
+let currentMonth = new Date().toISOString().slice(0,7);
+let storageKey = null;
+
+function monthLabelText(ym){
+  const [y,m] = ym.split("-").map(Number);
+  return new Date(y, m-1, 1).toLocaleDateString(undefined,{month:"short", year:"numeric"});
+}
+function fmt(n){
+  return "RM " + Number(n).toLocaleString(undefined,{minimumFractionDigits:0, maximumFractionDigits:2});
+}
+function sum(arr){ return arr.reduce((a,b)=>a+Number(b.amount||0),0); }
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name.replace("var(","").replace(")","")); }
+
+async function loadMonth(ym){
+  storageKey = "flow:" + ym;
+  document.getElementById("monthLabel").textContent = monthLabelText(ym);
+  try{
+    const res = await window.storage.get(storageKey, false);
+    state = res && res.value ? JSON.parse(res.value) : { salary: [], commit: [], expense: [], saving: [] };
+  }catch(e){
+    state = { salary: [], commit: [], expense: [], saving: [] };
+  }
+  state.commit.forEach(c=>{ if(c.paid===undefined) c.paid=false; });
+  renderAll();
+}
+async function save(){
+  try{ await window.storage.set(storageKey, JSON.stringify(state), false); }
+  catch(e){ console.error("Storage error", e); }
+}
+
+function goto(page){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("on"));
+  document.getElementById("page-"+page).classList.add("on");
+  document.querySelectorAll(".navitem").forEach(n=>n.classList.toggle("on", n.dataset.page===page));
+  window.scrollTo({top:0, behavior:"instant"});
+}
+
+document.querySelectorAll(".navitem").forEach(el=>{
+  el.addEventListener("click", ()=>goto(el.dataset.page));
+});
+document.querySelectorAll(".stat[data-goto]").forEach(el=>{
+  el.addEventListener("click", ()=>goto(el.dataset.goto));
+});
+
+function renderAll(){
+  const sSalary = sum(state.salary), sCommit = sum(state.commit), sExpense = sum(state.expense), sSaving = sum(state.saving);
+
+  document.getElementById("sumSalary").textContent = fmt(sSalary);
+  document.getElementById("sumCommit").textContent = fmt(sCommit);
+  document.getElementById("sumExpense").textContent = fmt(sExpense);
+  document.getElementById("sumSaving").textContent = fmt(sSaving);
+
+  const paidCount = state.commit.filter(c=>c.paid).length;
+  document.getElementById("commitProgress").textContent = `${paidCount} of ${state.commit.length} paid`;
+
+  const left = sSalary - sCommit - sExpense - sSaving;
+  document.getElementById("balanceAmt").textContent = fmt(left);
+
+  const bar = document.getElementById("balanceBar");
+  bar.innerHTML = "";
+  const total = sCommit + sExpense + sSaving;
+  const denom = Math.max(total, sSalary || total, 1);
+  [["commit", sCommit], ["expense", sExpense], ["saving", sSaving]].forEach(([key, val])=>{
+    if(val <= 0) return;
+    const seg = document.createElement("div");
+    seg.style.width = (val/denom)*100 + "%";
+    seg.style.background = cssVar("--"+key);
+    bar.appendChild(seg);
+  });
+
+  const all = [];
+  Object.keys(CATS).forEach(k=>{
+    state[k].forEach(item=>all.push({...item, cat:k}));
+  });
+  all.sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const recentList = document.getElementById("recentList");
+  recentList.innerHTML = "";
+  if(!all.length){
+    recentList.innerHTML = `<div class="empty">No entries yet. Add your salary, bills, or spending to get started.</div>`;
+  } else {
+    all.slice(0,8).forEach(item=>{
+      const row = document.createElement("div");
+      row.className = "recent-row";
+      const c = CATS[item.cat];
+      row.innerHTML = `
+        <div class="rmain">
+          <span class="badge" style="background:${c.bg};color:${c.color}">${item.cat}</span>
+          <span class="rname"></span>
+        </div>
+        <span class="ramt" style="color:${c.color}"></span>`;
+      row.querySelector(".rname").textContent = item.name;
+      row.querySelector(".ramt").textContent = (item.cat==="salary"?"+":"−") + " " + fmt(item.amount);
+      recentList.appendChild(row);
+    });
+  }
+
+  renderSalaryPage(sSalary);
+  renderCommitPage(sCommit);
+  renderExpensePage(sExpense);
+  renderSavingPage(sSaving);
+}
+
+function renderSalaryPage(total){
+  document.getElementById("salaryTotal").textContent = fmt(total);
+  document.getElementById("salaryCount").textContent = state.salary.length;
+  const list = document.getElementById("list-salary");
+  list.innerHTML = "";
+  if(!state.salary.length){ list.innerHTML = `<div class="empty">No income logged this month.</div>`; return; }
+  state.salary.slice().reverse().forEach(item=>{
+    const row = document.createElement("div");
+    row.className = "row";
+    const dateStr = item.date ? new Date(item.date).toLocaleDateString(undefined,{day:"numeric", month:"short"}) : "";
+    row.innerHTML = `
+      <div class="left"><div><div class="rname"></div><div class="rmeta">${dateStr}</div></div></div>
+      <div class="right"><span class="ramt" style="color:var(--salary)"></span><button class="del">✕</button></div>`;
+    row.querySelector(".rname").textContent = item.name;
+    row.querySelector(".ramt").textContent = fmt(item.amount);
+    row.querySelector(".del").addEventListener("click", ()=>removeItem("salary", item.id));
+    list.appendChild(row);
+  });
+}
+
+function renderExpensePage(total){
+  document.getElementById("expenseTotal").textContent = fmt(total);
+  document.getElementById("expenseCount").textContent = state.expense.length;
+  const list = document.getElementById("list-expense");
+  list.innerHTML = "";
+  if(!state.expense.length){ list.innerHTML = `<div class="empty">No expenses logged this month.</div>`; return; }
+  state.expense.slice().reverse().forEach(item=>{
+    const row = document.createElement("div");
+    row.className = "row";
+    const dateStr = item.date ? new Date(item.date).toLocaleDateString(undefined,{day:"numeric", month:"short"}) : "";
+    row.innerHTML = `
+      <div class="left"><div><div class="rname"></div>
+        <div class="rmeta">${item.category?`<span class="badge" style="background:var(--expense-bg);color:var(--expense)">${item.category}</span>`:""}${dateStr}</div>
+      </div></div>
+      <div class="right"><span class="ramt" style="color:var(--expense)"></span><button class="del">✕</button></div>`;
+    row.querySelector(".rname").textContent = item.name;
+    row.querySelector(".ramt").textContent = fmt(item.amount);
+    row.querySelector(".del").addEventListener("click", ()=>removeItem("expense", item.id));
+    list.appendChild(row);
+  });
+}
+
+function renderSavingPage(total){
+  document.getElementById("savingTotal").textContent = fmt(total);
+  document.getElementById("savingCount").textContent = state.saving.length;
+  const list = document.getElementById("list-saving");
+  list.innerHTML = "";
+  if(!state.saving.length){ list.innerHTML = `<div class="empty">No savings logged this month.</div>`; return; }
+  state.saving.slice().reverse().forEach(item=>{
+    const row = document.createElement("div");
+    row.className = "row";
+    const dateStr = item.date ? new Date(item.date).toLocaleDateString(undefined,{day:"numeric", month:"short"}) : "";
+    row.innerHTML = `
+      <div class="left"><div><div class="rname"></div><div class="rmeta">${dateStr}</div></div></div>
+      <div class="right"><span class="ramt" style="color:var(--saving)"></span><button class="del">✕</button></div>`;
+    row.querySelector(".rname").textContent = item.name;
+    row.querySelector(".ramt").textContent = fmt(item.amount);
+    row.querySelector(".del").addEventListener("click", ()=>removeItem("saving", item.id));
+    list.appendChild(row);
+  });
+}
+
+function renderCommitPage(total){
+  const paid = state.commit.filter(c=>c.paid);
+  const pending = state.commit.filter(c=>!c.paid);
+  document.getElementById("commitTotal").textContent = fmt(total);
+  document.getElementById("commitPaidAmt").textContent = fmt(sum(paid));
+  document.getElementById("commitPendingAmt").textContent = fmt(sum(pending));
+
+  const list = document.getElementById("list-commit");
+  list.innerHTML = "";
+  if(!state.commit.length){ list.innerHTML = `<div class="empty">No commitments added. Note down rent, loans, subscriptions and bills here.</div>`; return; }
+
+  const sorted = state.commit.slice().sort((a,b)=>{
+    if(a.paid !== b.paid) return a.paid ? 1 : -1;
+    return (a.dueDay||99) - (b.dueDay||99);
+  });
+
+  sorted.forEach(item=>{
+    const row = document.createElement("div");
+    row.className = "row" + (item.paid ? " paid" : "");
+    const dueStr = item.dueDay ? `Due ${item.dueDay}${ordinal(item.dueDay)}` : "";
+    row.innerHTML = `
+      <div class="left">
+        <div class="check ${item.paid ? "checked" : ""}">${item.paid ? "✓" : ""}</div>
+        <div>
+          <div class="rname"></div>
+          <div class="rmeta">
+            ${item.category?`<span class="badge" style="background:var(--commit-bg);color:var(--commit)">${item.category}</span>`:""}
+            ${dueStr}
+          </div>
+        </div>
+      </div>
+      <div class="right"><span class="ramt" style="color:var(--commit)"></span><button class="del">✕</button></div>`;
+    row.querySelector(".rname").textContent = item.name;
+    row.querySelector(".ramt").textContent = fmt(item.amount);
+    row.querySelector(".check").addEventListener("click", ()=>{
+      item.paid = !item.paid;
+      save(); renderAll();
+    });
+    row.querySelector(".del").addEventListener("click", ()=>removeItem("commit", item.id));
+    list.appendChild(row);
+  });
+}
+
+function ordinal(n){
+  n = Number(n);
+  if(n>3 && n<21) return "th";
+  switch(n%10){case 1:return "st";case 2:return "nd";case 3:return "rd";default:return "th";}
+}
+
+function removeItem(tab, id){
+  const idx = state[tab].findIndex(x=>x.id===id);
+  if(idx>-1){ state[tab].splice(idx,1); save(); renderAll(); }
+}
+
+document.querySelectorAll("form.add-form").forEach(form=>{
+  form.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    const tab = form.dataset.tab;
+    const nameEl = form.querySelector('[name="name"]');
+    const amtEl = form.querySelector('[name="amount"]');
+    const dueDayEl = form.querySelector('[name="dueDay"]');
+    const catEl = form.querySelector('[name="category"]');
+    const errEl = form.querySelector(".err");
+
+    const name = nameEl.value.trim();
+    const amount = parseFloat(amtEl.value);
+
+    if(!name){ errEl.textContent = "Enter a name first"; errEl.style.display = "block"; return; }
+    if(isNaN(amount) || amount <= 0){ errEl.textContent = "Enter an amount greater than 0"; errEl.style.display = "block"; return; }
+    if(dueDayEl && dueDayEl.value && (dueDayEl.value < 1 || dueDayEl.value > 31)){
+      errEl.textContent = "Due day must be between 1 and 31"; errEl.style.display = "block"; return;
+    }
+    errEl.style.display = "none";
+
+    const entry = {
+      id: Date.now() + "-" + Math.random().toString(36).slice(2,7),
+      name, amount,
+      date: new Date().toISOString(),
+    };
+    if(catEl) entry.category = catEl.value;
+    if(dueDayEl) entry.dueDay = dueDayEl.value ? parseInt(dueDayEl.value) : null;
+    if(tab === "commit") entry.paid = false;
+
+    state[tab].push(entry);
+    save();
+    nameEl.value = "";
+    amtEl.value = "";
+    if(dueDayEl) dueDayEl.value = "";
+    nameEl.focus();
+    renderAll();
+  });
+});
+
+document.getElementById("prevMonth").addEventListener("click", ()=>{
+  const [y,m] = currentMonth.split("-").map(Number);
+  currentMonth = new Date(y, m-2, 1).toISOString().slice(0,7);
+  loadMonth(currentMonth);
+});
+document.getElementById("nextMonth").addEventListener("click", ()=>{
+  const [y,m] = currentMonth.split("-").map(Number);
+  currentMonth = new Date(y, m, 1).toISOString().slice(0,7);
+  loadMonth(currentMonth);
+});
+
+loadMonth(currentMonth);
+</script>
+</body>
+</html>
