@@ -2,25 +2,27 @@ import { useMemo, useState } from 'react'
 import { INSTITUTION_CATEGORY_LABELS, MALAYSIA_INSTITUTIONS, type InstitutionCategory } from '../utils/institutions'
 import { InstitutionBadge } from './InstitutionBadge'
 
-const CATEGORIES: InstitutionCategory[] = ['bank', 'ewallet', 'card']
+const ALL_CATEGORIES: InstitutionCategory[] = ['bank', 'digitalBank', 'ewallet', 'bnpl', 'card']
 
 interface Props {
+  categories?: InstitutionCategory[]
   onSelect: (id: string | null) => void
   onClose: () => void
 }
 
-export function InstitutionPicker({ onSelect, onClose }: Props) {
+export function InstitutionPicker({ categories, onSelect, onClose }: Props) {
   const [search, setSearch] = useState('')
+  const activeCategories = categories ?? ALL_CATEGORIES
 
   const groups = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return CATEGORIES.map((category) => ({
+    return activeCategories.map((category) => ({
       category,
       items: MALAYSIA_INSTITUTIONS.filter(
         (i) => i.category === category && (!term || i.name.toLowerCase().includes(term)),
       ),
     })).filter((g) => g.items.length > 0)
-  }, [search])
+  }, [search, activeCategories])
 
   return (
     <div

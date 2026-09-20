@@ -10,6 +10,7 @@ import { Dashboard } from './screens/Dashboard'
 import { Settings } from './screens/Settings'
 import { People } from './screens/People'
 import { Accounts } from './screens/Accounts'
+import { Loans } from './screens/Loans'
 import { useTransactions } from './hooks/useTransactions'
 import { useAccounts } from './hooks/useAccounts'
 import { usePeople } from './hooks/usePeople'
@@ -26,6 +27,7 @@ const TAB_WIDTH: Record<Tab, string> = {
   dashboard: 'max-w-6xl',
   add: 'max-w-5xl',
   accounts: 'max-w-6xl',
+  loans: 'max-w-6xl',
   budgets: 'max-w-6xl',
   people: 'max-w-6xl',
   settings: 'max-w-6xl',
@@ -87,6 +89,7 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
     dashboard: 'Dashboard',
     add: editingTransaction ? 'Edit transaction' : 'Add transaction',
     accounts: 'Accounts',
+    loans: 'Loans',
     budgets: 'Budgets',
     people: 'People',
     settings: 'Settings',
@@ -172,6 +175,7 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
               onDelete={(id) => deleteAccount(uid, id)}
             />
           )}
+          {tab === 'loans' && <Loans accounts={accounts} balances={accountBalances} />}
           {tab === 'budgets' && (
             <BudgetSettings
               budgets={budgets}
@@ -205,6 +209,7 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
               onAddIncomeCategory={(category) => addCustomCategory(uid, 'customIncomeCategories', category)}
               onRemoveIncomeCategory={(category) => removeCustomCategory(uid, 'customIncomeCategories', category)}
               onOpenAccounts={() => changeTab('accounts')}
+              onOpenLoans={() => changeTab('loans')}
             />
           )}
         </main>

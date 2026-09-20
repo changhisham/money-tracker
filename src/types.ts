@@ -6,17 +6,31 @@ export type Recurrence = 'weekly' | 'monthly' | 'yearly'
 
 export type TransactionType = 'expense' | 'income' | 'transfer'
 
-export type AccountType = 'cash' | 'bank' | 'credit' | 'ewallet' | 'other'
+export type AccountType = 'cash' | 'bank' | 'credit' | 'ewallet' | 'bnpl' | 'loan' | 'other'
+
+/** Account types that represent money owed rather than money held — a negative balance means you owe that much. */
+export const LIABILITY_ACCOUNT_TYPES: AccountType[] = ['credit', 'bnpl', 'loan']
 
 export interface Account {
   id: string
   name: string
   type: AccountType
   currency: string
+  /** For liability types, a negative balance means you currently owe that amount. */
   startingBalance: number
   createdAt: number
   archived?: boolean
   institutionId?: string | null
+  /** Loan-only: total amount originally borrowed (fixed at origination). */
+  originalPrincipal?: number | null
+  /** Loan-only: annual interest rate, as a percentage (e.g. 3.5). Reference only. */
+  interestRate?: number | null
+  /** Loan-only: expected recurring installment amount. Reference only. */
+  monthlyPayment?: number | null
+  /** Loan-only: ISO date the loan started, used with loanTermMonths to estimate a payoff date. */
+  loanStartDate?: string | null
+  /** Loan-only: term length in months, used with loanStartDate to estimate a payoff date. */
+  loanTermMonths?: number | null
 }
 
 export type NewAccount = Omit<Account, 'id' | 'createdAt'>
@@ -108,6 +122,8 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   bank: 'Bank',
   credit: 'Credit card',
   ewallet: 'E-wallet',
+  bnpl: 'BNPL (PayLater)',
+  loan: 'Loan',
   other: 'Other',
 }
 
@@ -116,6 +132,8 @@ export const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
   bank: '🏦',
   credit: '💳',
   ewallet: '📱',
+  bnpl: '🛍️',
+  loan: '📉',
   other: '🗂️',
 }
 

@@ -1,4 +1,6 @@
-export type InstitutionCategory = 'bank' | 'card' | 'ewallet'
+import type { AccountType } from '../types'
+
+export type InstitutionCategory = 'bank' | 'digitalBank' | 'card' | 'ewallet' | 'bnpl'
 
 export interface Institution {
   id: string
@@ -10,8 +12,10 @@ export interface Institution {
 
 export const INSTITUTION_CATEGORY_LABELS: Record<InstitutionCategory, string> = {
   bank: 'Banks',
+  digitalBank: 'Digital banks',
   card: 'Card networks',
   ewallet: 'E-wallets',
+  bnpl: 'Buy now, pay later',
 }
 
 /**
@@ -42,6 +46,13 @@ export const MALAYSIA_INSTITUTIONS: Institution[] = [
   { id: 'agrobank', name: 'Agrobank', shortCode: 'AGB', category: 'bank', color: '#4c9f38' },
   { id: 'kuwaitfinance', name: 'Kuwait Finance House', shortCode: 'KFH', category: 'bank', color: '#00693e' },
 
+  // Digital banks (Bank Negara Malaysia digital banking licensees)
+  { id: 'gxbank', name: 'GXBank', shortCode: 'GX', category: 'digitalBank', color: '#00c853' },
+  { id: 'boostbank', name: 'Boost Bank', shortCode: 'BB', category: 'digitalBank', color: '#d32f3d' },
+  { id: 'aeonbank', name: 'AEON Bank', shortCode: 'AEON', category: 'digitalBank', color: '#d6006d' },
+  { id: 'rytbank', name: 'Ryt Bank', shortCode: 'RYT', category: 'digitalBank', color: '#7b2ff7' },
+  { id: 'kafdigital', name: 'KAF Digital Bank', shortCode: 'KAF', category: 'digitalBank', color: '#003049' },
+
   // Card networks
   { id: 'visa', name: 'Visa', shortCode: 'VISA', category: 'card', color: '#1a1f71' },
   { id: 'mastercard', name: 'Mastercard', shortCode: 'MC', category: 'card', color: '#eb001b' },
@@ -60,6 +71,15 @@ export const MALAYSIA_INSTITUTIONS: Institution[] = [
   { id: 'wechatpay', name: 'WeChat Pay MY', shortCode: 'WCP', category: 'ewallet', color: '#09b83e' },
   { id: 'fave', name: 'Fave', shortCode: 'FAVE', category: 'ewallet', color: '#ff4e45' },
   { id: 'razerpay', name: 'MerchantTrade / RazerPay', shortCode: 'RZP', category: 'ewallet', color: '#1a9c2e' },
+
+  // Buy now, pay later
+  { id: 'atome', name: 'Atome', shortCode: 'ATOME', category: 'bnpl', color: '#6c4cff' },
+  { id: 'grabpaylater', name: 'Grab PayLater', shortCode: 'GRAB', category: 'bnpl', color: '#00b14f' },
+  { id: 'spaylater', name: 'SPayLater (Shopee)', shortCode: 'SPL', category: 'bnpl', color: '#ee4d2d' },
+  { id: 'split', name: 'Split', shortCode: 'SPLIT', category: 'bnpl', color: '#00c2a8' },
+  { id: 'pace', name: 'Pace', shortCode: 'PACE', category: 'bnpl', color: '#ff6b4a' },
+  { id: 'rely', name: 'Rely', shortCode: 'RELY', category: 'bnpl', color: '#2f6fed' },
+  { id: 'favepaylater', name: 'FavePay Later', shortCode: 'FAVE', category: 'bnpl', color: '#ff4e45' },
 ]
 
 export function findInstitution(id: string | undefined | null): Institution | undefined {
@@ -68,4 +88,24 @@ export function findInstitution(id: string | undefined | null): Institution | un
 
 export function institutionsByCategory(category: InstitutionCategory): Institution[] {
   return MALAYSIA_INSTITUTIONS.filter((i) => i.category === category)
+}
+
+/** Which institution categories make sense to offer for a given account type. */
+export function categoriesForAccountType(type: AccountType): InstitutionCategory[] {
+  switch (type) {
+    case 'bank':
+      return ['bank', 'digitalBank']
+    case 'credit':
+      return ['card']
+    case 'ewallet':
+      return ['ewallet']
+    case 'bnpl':
+      return ['bnpl']
+    case 'loan':
+      return ['bank', 'digitalBank']
+    case 'cash':
+      return []
+    case 'other':
+      return ['bank', 'digitalBank', 'card', 'ewallet', 'bnpl']
+  }
 }

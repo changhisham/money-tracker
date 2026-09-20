@@ -33,6 +33,7 @@ interface Props {
   onAddIncomeCategory: (category: string) => Promise<void>
   onRemoveIncomeCategory: (category: string) => Promise<void>
   onOpenAccounts: () => void
+  onOpenLoans: () => void
 }
 
 export function Settings({
@@ -49,6 +50,7 @@ export function Settings({
   onAddIncomeCategory,
   onRemoveIncomeCategory,
   onOpenAccounts,
+  onOpenLoans,
 }: Props) {
   const { logOut } = useAuth()
   const currencyOptions = [...new Set([...knownCurrencies, ...DEFAULT_CURRENCIES])]
@@ -176,6 +178,14 @@ export function Settings({
         className="flex w-full items-center justify-between rounded-2xl border border-line bg-surface p-4 text-left hover:bg-surface-hover md:hidden"
       >
         <span className="text-sm font-medium text-ink-soft">🏦 Manage accounts</span>
+        <span className="text-ink-faint">→</span>
+      </button>
+
+      <button
+        onClick={onOpenLoans}
+        className="flex w-full items-center justify-between rounded-2xl border border-line bg-surface p-4 text-left hover:bg-surface-hover md:hidden"
+      >
+        <span className="text-sm font-medium text-ink-soft">📉 View loans</span>
         <span className="text-ink-faint">→</span>
       </button>
 

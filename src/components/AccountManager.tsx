@@ -1,13 +1,29 @@
 import { useState, type FormEvent } from 'react'
-import { ACCOUNT_TYPE_ICONS, ACCOUNT_TYPE_LABELS, DEFAULT_CURRENCIES, type AccountType, type NewAccount } from '../types'
-import { formatMoney } from '../utils/dateRanges'
+import {
+  ACCOUNT_TYPE_ICONS,
+  ACCOUNT_TYPE_LABELS,
+  DEFAULT_CURRENCIES,
+  LIABILITY_ACCOUNT_TYPES,
+  type AccountType,
+  type NewAccount,
+} from '../types'
+import { formatMoney, todayIso } from '../utils/dateRanges'
 import { ConfirmDialog } from './ConfirmDialog'
 import { InstitutionBadge } from './InstitutionBadge'
 import { InstitutionPicker } from './InstitutionPicker'
-import { findInstitution } from '../utils/institutions'
+import { categoriesForAccountType, findInstitution } from '../utils/institutions'
 import type { AccountBalance } from '../utils/accountBalances'
 
-const ACCOUNT_TYPES: AccountType[] = ['cash', 'bank', 'credit', 'ewallet', 'other']
+const ACCOUNT_TYPES: AccountType[] = ['cash', 'bank', 'credit', 'ewallet', 'bnpl', 'loan', 'other']
+
+const LOGO_PROMPTS: Partial<Record<AccountType, string>> = {
+  bank: 'Choose a bank…',
+  credit: 'Choose a card network…',
+  ewallet: 'Choose an e-wallet…',
+  bnpl: 'Choose a PayLater provider…',
+  loan: 'Choose a lender…',
+  other: 'Choose a logo…',
+}
 
 interface Props {
   balances: AccountBalance[]
@@ -25,10 +41,31 @@ export function AccountManager({ balances, knownCurrencies, onAdd, onDelete }: P
   const [startingBalance, setStartingBalance] = useState('0')
   const [institutionId, setInstitutionId] = useState<string | null>(null)
   const [pickingInstitution, setPickingInstitution] = useState(false)
+  const [originalPrincipal, setOriginalPrincipal] = useState('')
+  const [interestRate, setInterestRate] = useState('')
+  const [monthlyPayment, setMonthlyPayment] = useState('')
+  const [loanStartDate, setLoanStartDate] = useState(todayIso())
+  const [loanTermMonths, setLoanTermMonths] = useState('')
   const [saving, setSaving] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const selectedInstitution = findInstitution(institutionId)
+  const relevantCategories = categoriesForAccountType(type)
+  const isLiability = LIABILITY_ACCOUNT_TYPES.includes(type)
+
+  function changeType(next: AccountType) {
+    setType(next)
+    const nextCategories = categoriesForAccountType(next)
+    if (selectedInstitution && !nextCategories.includes(selectedInstitution.category)) {
+      setInstitutionId(null)
+    }
+    if (next !== 'loan') {
+      setOriginalPrincipal('')
+      setInterestRate('')
+      setMonthlyPayment('')
+      setLoanTermMonths('')
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -41,10 +78,20 @@ export function AccountManager({ balances, knownCurrencies, onAdd, onDelete }: P
         currency,
         startingBalance: Number(startingBalance) || 0,
         institutionId,
+        originalPrincipal: type === 'loan' && originalPrincipal ? Number(originalPrincipal) : null,
+        interestRate: type === 'loan' && interestRate ? Number(interestRate) : null,
+        monthlyPayment: type === 'loan' && monthlyPayment ? Number(monthlyPayment) : null,
+        loanStartDate: type === 'loan' && loanTermMonths ? loanStartDate : null,
+        loanTermMonths: type === 'loan' && loanTermMonths ? Number(loanTermMonths) : null,
       })
       setName('')
       setStartingBalance('0')
       setInstitutionId(null)
+      setOriginalPrincipal('')
+      setInterestRate('')
+      setMonthlyPayment('')
+      setLoanStartDate(todayIso())
+      setLoanTermMonths('')
       setAdding(false)
     } finally {
       setSaving(false)
@@ -114,7 +161,7 @@ export function AccountManager({ balances, knownCurrencies, onAdd, onDelete }: P
           <div className="flex gap-2">
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as AccountType)}
+              onChange={(e) => changeType(e.target.value as AccountType)}
               className="flex-1 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
             >
               {ACCOUNT_TYPES.map((t) => (
@@ -136,34 +183,112 @@ export function AccountManager({ balances, knownCurrencies, onAdd, onDelete }: P
             </select>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-ink-soft">Bank / wallet logo (optional)</label>
-            <button
-              type="button"
-              onClick={() => setPickingInstitution(true)}
-              className="flex w-full items-center gap-2.5 rounded-xl border border-line bg-base px-3 py-2.5 text-left text-sm text-ink hover:border-emerald-500"
-            >
-              {selectedInstitution ? (
-                <>
-                  <InstitutionBadge institution={selectedInstitution} size="sm" />
-                  {selectedInstitution.name}
-                </>
-              ) : (
-                <span className="text-ink-faint">Choose a Malaysian bank, card or e-wallet…</span>
-              )}
-            </button>
-          </div>
+          {relevantCategories.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-soft">Logo (optional)</label>
+              <button
+                type="button"
+                onClick={() => setPickingInstitution(true)}
+                className="flex w-full items-center gap-2.5 rounded-xl border border-line bg-base px-3 py-2.5 text-left text-sm text-ink hover:border-emerald-500"
+              >
+                {selectedInstitution ? (
+                  <>
+                    <InstitutionBadge institution={selectedInstitution} size="sm" />
+                    {selectedInstitution.name}
+                  </>
+                ) : (
+                  <span className="text-ink-faint">{LOGO_PROMPTS[type]}</span>
+                )}
+              </button>
+            </div>
+          )}
+
+          {type === 'loan' && (
+            <div className="space-y-3 rounded-xl border border-line bg-base p-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-soft">Original principal (optional)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="e.g. 50000"
+                  value={originalPrincipal}
+                  onChange={(e) => setOriginalPrincipal(e.target.value)}
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                />
+                <p className="mt-1 text-[11px] text-ink-faint">Total amount originally borrowed — used to show payoff progress.</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs font-medium text-ink-soft">Interest rate % (optional)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g. 3.5"
+                    value={interestRate}
+                    onChange={(e) => setInterestRate(e.target.value)}
+                    className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs font-medium text-ink-soft">Monthly payment (optional)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g. 850"
+                    value={monthlyPayment}
+                    onChange={(e) => setMonthlyPayment(e.target.value)}
+                    className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs font-medium text-ink-soft">Start date</label>
+                  <input
+                    type="date"
+                    value={loanStartDate}
+                    onChange={(e) => setLoanStartDate(e.target.value)}
+                    className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs font-medium text-ink-soft">Term, months (optional)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    placeholder="e.g. 60"
+                    value={loanTermMonths}
+                    onChange={(e) => setLoanTermMonths(e.target.value)}
+                    className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-soft">Starting balance</label>
+            <label className="mb-1 block text-xs font-medium text-ink-soft">
+              {isLiability ? 'Current balance owed' : 'Starting balance'}
+            </label>
             <input
               type="number"
               inputMode="decimal"
               step="0.01"
+              placeholder={isLiability ? 'e.g. -45000' : '0'}
               value={startingBalance}
               onChange={(e) => setStartingBalance(e.target.value)}
-              className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+              className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
             />
+            {isLiability && (
+              <p className="mt-1 text-[11px] text-ink-faint">Enter as a negative number — e.g. -45000 if you still owe RM45,000.</p>
+            )}
           </div>
           <button
             type="submit"
@@ -177,6 +302,7 @@ export function AccountManager({ balances, knownCurrencies, onAdd, onDelete }: P
 
       {pickingInstitution && (
         <InstitutionPicker
+          categories={relevantCategories}
           onSelect={(id) => {
             setInstitutionId(id)
             setPickingInstitution(false)
