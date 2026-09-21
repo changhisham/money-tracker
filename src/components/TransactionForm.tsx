@@ -24,6 +24,7 @@ interface Props {
   knownExpenseCategories: string[]
   knownIncomeCategories: string[]
   initialValues?: Transaction
+  initialType?: TransactionType
   onSubmit: (values: NewTransaction) => Promise<void>
   onCancel?: () => void
   onAddPerson: (name: string) => Promise<string>
@@ -35,12 +36,13 @@ export function TransactionForm({
   knownExpenseCategories,
   knownIncomeCategories,
   initialValues,
+  initialType,
   onSubmit,
   onCancel,
   onAddPerson,
 }: Props) {
   const isEditing = Boolean(initialValues)
-  const [type, setType] = useState<TransactionType>(initialValues?.type ?? 'expense')
+  const [type, setType] = useState<TransactionType>(initialValues?.type ?? initialType ?? 'expense')
   const [amount, setAmount] = useState(initialValues ? String(initialValues.amount) : '')
   const [accountId, setAccountId] = useState(initialValues?.accountId ?? accounts[0]?.id ?? '')
   const [toAccountId, setToAccountId] = useState(initialValues?.toAccountId ?? '')

@@ -12,6 +12,16 @@
   --color-ink: #0f172a;
   --color-ink-soft: #475569;
   --color-ink-faint: #94a3b8;
+
+  /* Semantic colors — meaning first, not "expense = red". */
+  --color-income: #10b981;
+  --color-expense: #0f172a;
+  --color-transfer: #3987e5;
+  --color-warning: #d97706;
+  --color-danger: #ef4444;
+  --color-info: #3987e5;
+  --color-success: #10b981;
+  --color-primary: #10b981;
 }
 
 .dark {
@@ -22,6 +32,15 @@
   --color-ink: #f1f5f9;
   --color-ink-soft: #cbd5e1;
   --color-ink-faint: #64748b;
+
+  --color-income: #34d399;
+  --color-expense: #f1f5f9;
+  --color-transfer: #60a5fa;
+  --color-warning: #f59e0b;
+  --color-danger: #f87171;
+  --color-info: #60a5fa;
+  --color-success: #34d399;
+  --color-primary: #34d399;
 }
 
 html,

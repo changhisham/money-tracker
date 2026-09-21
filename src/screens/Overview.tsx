@@ -12,16 +12,13 @@ import { DebtsWidget } from '../components/DebtsWidget'
 import { AccountsOverview } from '../components/AccountsOverview'
 import { TransactionList } from '../components/TransactionList'
 import { getRange, shiftAnchor } from '../utils/dateRanges'
-import { inRange, incomeExpenseByCurrency, periodSeries, totalsByCategory } from '../utils/summary'
-import { transactionsToCsv, downloadCsv } from '../utils/csv'
-import { categoryIcon } from '../utils/categoryIcons'
+import { inRange, incomeExpenseByCurrency, periodSeries } from '../utils/summary'
 import { computeAccountBalances } from '../utils/accountBalances'
 import { upcomingOccurrences } from '../utils/recurring'
-import type { Account, Budget, Debt, NewTransaction, Person, Transaction, TransactionType, Period } from '../types'
+import type { Account, Budget, Debt, NewTransaction, Person, Transaction, Period } from '../types'
 
-const ALL_CATEGORIES = '__all__'
-const ALL_TYPES = '__all__'
 const SPARK_LENGTH = 6
+const RECENT_COUNT = 6
 
 function trendPct(series: number[]): number | null {
   const current = series[series.length - 1] ?? 0
@@ -42,9 +39,11 @@ interface Props {
   onEdit: (transaction: Transaction) => void
   onAddTransaction: (transaction: NewTransaction) => Promise<unknown>
   onOpenPeople: () => void
+  onViewAllTransactions: () => void
+  onViewAnalytics: () => void
 }
 
-export function Dashboard({
+export function Overview({
   transactions,
   accounts,
   budgets,
@@ -56,12 +55,11 @@ export function Dashboard({
   onEdit,
   onAddTransaction,
   onOpenPeople,
+  onViewAllTransactions,
+  onViewAnalytics,
 }: Props) {
   const [period, setPeriod] = useState<Period>('monthly')
   const [anchor, setAnchor] = useState(new Date())
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES)
-  const [typeFilter, setTypeFilter] = useState<TransactionType | typeof ALL_TYPES>(ALL_TYPES)
 
   const includedTransactions = useMemo(() => transactions.filter((t) => !t.excluded), [transactions])
 
@@ -73,16 +71,9 @@ export function Dashboard({
   )
   const totals = useMemo(() => incomeExpenseByCurrency(includedPeriodTransactions), [includedPeriodTransactions])
   const primaryCurrency = totals[0]?.currency ?? accounts[0]?.currency ?? ''
-  const isCurrent = useMemo(
-    () => getRange(period, new Date()).label === range.label,
-    [period, range],
-  )
+  const isCurrent = useMemo(() => getRange(period, new Date()).label === range.label, [period, range])
 
   const balances = useMemo(() => computeAccountBalances(accounts, transactions), [accounts, transactions])
-  const categories = useMemo(
-    () => [...new Set(periodTransactions.map((t) => t.category).filter((c): c is string => Boolean(c)))],
-    [periodTransactions],
-  )
   const allCurrencies = useMemo(() => [...new Set(accounts.map((a) => a.currency))], [accounts])
 
   const series = useMemo(
@@ -97,13 +88,16 @@ export function Dashboard({
   const overallBudget = budgets.find((b) => b.period === period && b.currency === primaryCurrency && !b.category)
   const categoryBudgets = budgets.filter((b) => b.period === period && b.currency === primaryCurrency && b.category)
   const expenseByCategory = useMemo(
-    () => totalsByCategory(includedPeriodTransactions, primaryCurrency, 'expense'),
+    () =>
+      includedPeriodTransactions
+        .filter((t) => t.type === 'expense' && t.currency === primaryCurrency && t.category)
+        .reduce<Record<string, number>>((acc, t) => {
+          acc[t.category!] = (acc[t.category!] ?? 0) + t.amount
+          return acc
+        }, {}),
     [includedPeriodTransactions, primaryCurrency],
   )
-  const overBudgetCount = categoryBudgets.filter((b) => {
-    const spent = expenseByCategory.find((c) => c.category === b.category)?.total ?? 0
-    return spent > b.amount
-  }).length
+  const overBudgetCount = categoryBudgets.filter((b) => (expenseByCategory[b.category!] ?? 0) > b.amount).length
 
   const upcoming = useMemo(
     () => upcomingOccurrences(transactions, 14).filter((o) => o.latest.currency === primaryCurrency),
@@ -111,18 +105,7 @@ export function Dashboard({
   )
   const upcomingTotal = upcoming.reduce((sum, o) => sum + o.latest.amount, 0)
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    return periodTransactions.filter((t) => {
-      if (typeFilter !== ALL_TYPES && t.type !== typeFilter) return false
-      if (categoryFilter !== ALL_CATEGORIES && t.category !== categoryFilter) return false
-      if (term) {
-        const haystack = `${t.category ?? ''} ${t.payee ?? ''} ${(t.tags ?? []).join(' ')} ${t.note}`.toLowerCase()
-        if (!haystack.includes(term)) return false
-      }
-      return true
-    })
-  }, [periodTransactions, search, categoryFilter, typeFilter])
+  const recentTransactions = useMemo(() => transactions.slice(0, RECENT_COUNT), [transactions])
 
   function changePeriod(p: Period) {
     setPeriod(p)
@@ -182,19 +165,6 @@ export function Dashboard({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <BudgetRing
-          spent={primaryTotal?.expense ?? 0}
-          budgetAmount={overallBudget?.amount ?? null}
-          currency={primaryCurrency}
-          overBudgetCount={overBudgetCount}
-          budgetsSetCount={budgets.filter((b) => b.period === period && b.currency === primaryCurrency).length}
-        />
-        <UpNext occurrences={upcoming} accounts={accounts} onLogNow={logNow} />
-      </div>
-
-      <DebtsWidget debts={debts} people={people} transactions={transactions} onOpenPeople={onOpenPeople} />
-
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
           label="Income"
@@ -206,7 +176,7 @@ export function Dashboard({
           sparkline={incomeSeries}
         />
         <StatCard
-          label="Expenses"
+          label="Spending"
           value={primaryTotal ? `${primaryCurrency} ${primaryTotal.expense.toFixed(0)}` : '—'}
           icon="💸"
           iconBg="#ef444426"
@@ -215,7 +185,7 @@ export function Dashboard({
           sparkline={expenseSeries}
         />
         <StatCard
-          label="Net"
+          label="Saved"
           value={primaryTotal ? `${primaryCurrency} ${(primaryTotal.income - primaryTotal.expense).toFixed(0)}` : '—'}
           icon="📈"
           iconBg="#3987e526"
@@ -234,7 +204,34 @@ export function Dashboard({
         />
       </div>
 
-      <CategoryChart transactions={includedPeriodTransactions} currencyTotals={totals.map((t) => ({ currency: t.currency, total: t.expense }))} budgets={budgets} period={period} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <BudgetRing
+          spent={primaryTotal?.expense ?? 0}
+          budgetAmount={overallBudget?.amount ?? null}
+          currency={primaryCurrency}
+          overBudgetCount={overBudgetCount}
+          budgetsSetCount={budgets.filter((b) => b.period === period && b.currency === primaryCurrency).length}
+        />
+        <UpNext occurrences={upcoming} accounts={accounts} onLogNow={logNow} />
+      </div>
+
+      <DebtsWidget debts={debts} people={people} transactions={transactions} onOpenPeople={onOpenPeople} />
+
+      <div>
+        <CategoryChart
+          transactions={includedPeriodTransactions}
+          currencyTotals={totals.map((t) => ({ currency: t.currency, total: t.expense }))}
+          budgets={budgets}
+          period={period}
+        />
+        <button
+          onClick={onViewAnalytics}
+          className="mt-2 text-xs font-medium text-emerald-500 hover:text-emerald-400"
+        >
+          View analytics →
+        </button>
+      </div>
+
       <SpendingTrend transactions={includedTransactions} period={period} anchor={anchor} currencies={allCurrencies} />
       <InsightsCard transactions={includedTransactions} period={period} anchor={anchor} currency={primaryCurrency} />
 
@@ -243,54 +240,15 @@ export function Dashboard({
       {periodTransactions.length > 0 && (
         <div>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-medium text-ink-soft">Transactions</h2>
+            <h2 className="text-sm font-medium text-ink-soft">Recent transactions</h2>
             <button
-              onClick={() => downloadCsv(`transactions-${range.label}.csv`, transactionsToCsv(filtered, accounts))}
-              className="rounded-lg border border-line px-2.5 py-1 text-xs font-medium text-ink-soft hover:bg-surface-hover"
+              onClick={onViewAllTransactions}
+              className="text-xs font-medium text-emerald-500 hover:text-emerald-400"
             >
-              Export CSV
+              View all →
             </button>
           </div>
-
-          <div className="mb-3 flex gap-2">
-            <input
-              type="text"
-              placeholder="Search notes, payee, tags…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
-            />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as TransactionType | typeof ALL_TYPES)}
-              className="rounded-xl border border-line bg-surface px-2 text-sm text-ink outline-none focus:border-emerald-500"
-            >
-              <option value={ALL_TYPES}>All types</option>
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-              <option value="transfer">Transfer</option>
-            </select>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-xl border border-line bg-surface px-2 text-sm text-ink outline-none focus:border-emerald-500"
-            >
-              <option value={ALL_CATEGORIES}>All categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {categoryIcon(c)} {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {filtered.length > 0 ? (
-            <TransactionList transactions={filtered} accounts={accounts} onDelete={onDelete} onEdit={onEdit} />
-          ) : (
-            <p className="rounded-2xl border border-line bg-surface p-6 text-center text-sm text-ink-faint">
-              No transactions match your search.
-            </p>
-          )}
+          <TransactionList transactions={recentTransactions} accounts={accounts} onDelete={onDelete} onEdit={onEdit} />
         </div>
       )}
     </div>
