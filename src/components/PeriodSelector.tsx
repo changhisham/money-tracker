@@ -30,7 +30,7 @@ export function PeriodSelector({
             key={p}
             onClick={() => onPeriodChange(p)}
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
-              p === period ? 'bg-emerald-500 text-white' : 'text-ink-soft hover:text-ink'
+              p === period ? 'bg-primary text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
             {PERIOD_LABELS[p]}

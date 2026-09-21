@@ -27,7 +27,7 @@ export function Sidebar({ tab, onChange, onAddTransaction, name, email, onSignOu
       <div className="px-3 pb-2">
         <button
           onClick={onAddTransaction}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
         >
           <Plus className="h-4 w-4" aria-hidden />
           Add transaction
@@ -51,7 +51,7 @@ export function Sidebar({ tab, onChange, onAddTransaction, name, email, onSignOu
                     aria-current={active ? 'page' : undefined}
                     className={`flex w-full items-center gap-3 rounded-xl border-l-2 px-3 py-2.5 text-sm font-medium transition ${
                       active
-                        ? 'border-emerald-400 bg-indigo-900 text-white'
+                        ? 'border-primary-hover bg-indigo-900 text-white'
                         : 'border-transparent text-indigo-300 hover:bg-indigo-900/60 hover:text-white'
                     }`}
                   >

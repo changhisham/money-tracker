@@ -76,7 +76,7 @@ export function Loans({ accounts, balances }: Props) {
                 <div className="mt-3">
                   <div className="h-2 overflow-hidden rounded-full bg-surface-hover">
                     <div
-                      className="h-full rounded-full bg-emerald-500 transition-all"
+                      className="h-full rounded-full bg-income transition-all"
                       style={{ width: `${detail.progressPct}%` }}
                     />
                   </div>

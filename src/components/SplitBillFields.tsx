@@ -66,7 +66,7 @@ export function SplitBillFields({ amount, currency, people, value, onChange, onA
             key={m}
             onClick={() => setMode(m)}
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition ${
-              m === mode ? 'bg-emerald-500 text-white' : 'text-ink-soft hover:text-ink'
+              m === mode ? 'bg-primary text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
             {m === 'equal' ? 'Split equally' : 'Custom amounts'}
@@ -89,7 +89,7 @@ export function SplitBillFields({ amount, currency, people, value, onChange, onA
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(p.id)}
-                  className="h-4 w-4 rounded border-line accent-emerald-500"
+                  className="h-4 w-4 rounded border-line accent-primary"
                 />
                 {p.name}
               </label>
@@ -102,7 +102,7 @@ export function SplitBillFields({ amount, currency, people, value, onChange, onA
                   value={entry?.amount || ''}
                   onChange={(e) => setCustomAmount(p.id, e.target.value)}
                   placeholder="0.00"
-                  className="w-24 rounded-lg border border-line bg-surface px-2 py-1 text-right text-sm text-ink outline-none focus:border-emerald-500"
+                  className="w-24 rounded-lg border border-line bg-surface px-2 py-1 text-right text-sm text-ink outline-none focus:border-primary"
                 />
               )}
               {checked && mode === 'equal' && (
@@ -125,13 +125,13 @@ export function SplitBillFields({ amount, currency, people, value, onChange, onA
               void handleAddPerson()
             }
           }}
-          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
         />
         <button
           type="button"
           onClick={handleAddPerson}
           disabled={adding || !newName.trim()}
-          className="shrink-0 rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+          className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
         >
           Add
         </button>

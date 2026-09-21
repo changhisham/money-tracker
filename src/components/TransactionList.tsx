@@ -77,7 +77,7 @@ export function TransactionList({ transactions, accounts, onDelete, onEdit }: Pr
                         <p
                           className={`shrink-0 text-sm font-semibold ${
                             t.type === 'income'
-                              ? 'text-emerald-500'
+                              ? 'text-income'
                               : t.type === 'expense'
                                 ? 'text-ink'
                                 : 'text-blue-400'

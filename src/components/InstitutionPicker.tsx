@@ -48,7 +48,7 @@ export function InstitutionPicker({ categories, onSelect, onClose }: Props) {
             placeholder="Search Maybank, GrabPay, Visa…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-line bg-base px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-line bg-base px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
           />
         </div>
 

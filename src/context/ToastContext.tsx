@@ -16,7 +16,7 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null)
 
 const VARIANT_STYLES: Record<ToastVariant, string> = {
-  success: 'border-emerald-500/30 text-ink',
+  success: 'border-success/30 text-ink',
   error: 'border-red-500/30 text-ink',
   info: 'border-blue-500/30 text-ink',
 }
@@ -28,7 +28,7 @@ const VARIANT_ICON: Record<ToastVariant, typeof CheckCircle2> = {
 }
 
 const VARIANT_ICON_COLOR: Record<ToastVariant, string> = {
-  success: 'text-emerald-500',
+  success: 'text-success',
   error: 'text-red-400',
   info: 'text-blue-400',
 }

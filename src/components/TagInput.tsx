@@ -26,7 +26,7 @@ export function TagInput({ value, onChange }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 focus-within:border-emerald-500">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 focus-within:border-primary">
       {value.map((tag) => (
         <span
           key={tag}

@@ -34,7 +34,7 @@ export function SummaryCards({ totals, budgets, period }: Props) {
           >
             <div className="flex items-baseline justify-between">
               <span className="text-xs font-medium uppercase tracking-wide text-ink-faint">{currency}</span>
-              <span className={`text-xs font-medium ${net >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+              <span className={`text-xs font-medium ${net >= 0 ? 'text-income' : 'text-red-400'}`}>
                 Net {net >= 0 ? '+' : ''}
                 {formatMoney(net, currency)}
               </span>
@@ -42,7 +42,7 @@ export function SummaryCards({ totals, budgets, period }: Props) {
 
             <div className="mt-2 flex items-center gap-4 text-sm">
               <span className="text-ink-soft">
-                <span className="text-emerald-500">▲</span> {formatMoney(income, currency)}
+                <span className="text-income">▲</span> {formatMoney(income, currency)}
               </span>
               <span className="text-ink-soft">
                 <span className="text-red-400">▼</span> {formatMoney(expense, currency)}
@@ -54,7 +54,7 @@ export function SummaryCards({ totals, budgets, period }: Props) {
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      over ? 'bg-red-500' : near ? 'bg-amber-500' : 'bg-emerald-500'
+                      over ? 'bg-red-500' : near ? 'bg-amber-500' : 'bg-income'
                     }`}
                     style={{ width: `${Math.min(pct ?? 0, 100)}%` }}
                   />

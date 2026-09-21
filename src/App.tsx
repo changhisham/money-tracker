@@ -50,9 +50,9 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
   const [addChooserOpen, setAddChooserOpen] = useState(false)
   const { transactions, loading: transactionsLoading, addTransaction, deleteTransaction, updateTransaction } =
     useTransactions(uid)
-  const { accounts, loading: accountsLoading, addAccount, deleteAccount } = useAccounts(uid)
+  const { accounts, loading: accountsLoading, addAccount, updateAccount, deleteAccount } = useAccounts(uid)
   const { people, addPerson, deletePerson } = usePeople(uid)
-  const { debts, addDebt, deleteDebt, toggleDebtSettled, recordPayment } = useDebts(uid)
+  const { debts, addDebt, updateDebt, deleteDebt, toggleDebtSettled, recordPayment } = useDebts(uid)
   const { budgets, setBudget, deleteBudget } = useBudgets(uid)
   const {
     preferences,
@@ -234,7 +234,7 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
             {tab !== 'add' && (
               <button
                 onClick={openAddChooser}
-                className="hidden shrink-0 items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-400 sm:flex"
+                className="hidden shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover sm:flex"
               >
                 <Plus className="h-4 w-4" aria-hidden />
                 Add transaction
@@ -316,6 +316,7 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
               balances={accountBalances}
               knownCurrencies={knownCurrencies}
               onAdd={(account) => addAccount(uid, account)}
+              onUpdate={(id, account) => updateAccount(uid, id, account)}
               onDelete={handleDeleteAccount}
             />
           )}
@@ -344,6 +345,7 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
               onToggleDebtSettled={(debt) => toggleDebtSettled(uid, debt)}
               onDeleteDebt={(id) => deleteDebt(uid, id)}
               onRecordPayment={handleRecordPayment}
+              onUpdateDebt={(id, changes) => updateDebt(uid, id, changes)}
             />
           )}
           {tab === 'settings' && (

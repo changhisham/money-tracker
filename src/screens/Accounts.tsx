@@ -7,10 +7,11 @@ interface Props {
   balances: AccountBalance[]
   knownCurrencies: string[]
   onAdd: (account: NewAccount) => Promise<void>
+  onUpdate: (id: string, account: Partial<NewAccount>) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 
-export function Accounts({ balances, knownCurrencies, onAdd, onDelete }: Props) {
+export function Accounts({ balances, knownCurrencies, onAdd, onUpdate, onDelete }: Props) {
   const byCurrency = new Map<string, number>()
   for (const { account, balance } of balances) {
     byCurrency.set(account.currency, (byCurrency.get(account.currency) ?? 0) + balance)
@@ -28,7 +29,13 @@ export function Accounts({ balances, knownCurrencies, onAdd, onDelete }: Props) 
           ))}
         </div>
       )}
-      <AccountManager balances={balances} knownCurrencies={knownCurrencies} onAdd={onAdd} onDelete={onDelete} />
+      <AccountManager
+        balances={balances}
+        knownCurrencies={knownCurrencies}
+        onAdd={onAdd}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+      />
     </div>
   )
 }

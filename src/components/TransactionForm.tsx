@@ -138,7 +138,7 @@ export function TransactionForm({
             key={opt.id}
             onClick={() => changeType(opt.id)}
             className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
-              opt.id === type ? 'bg-emerald-500 text-white' : 'text-ink-soft hover:text-ink'
+              opt.id === type ? 'bg-primary text-white' : 'text-ink-soft hover:text-ink'
             }`}
           >
             {opt.label}
@@ -158,7 +158,7 @@ export function TransactionForm({
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 py-3 text-lg text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 py-3 text-lg text-ink placeholder-ink-faint outline-none focus:border-primary"
           />
           <span className="flex w-16 items-center justify-center rounded-xl border border-line bg-base text-sm font-medium text-ink-soft">
             {currency || '—'}
@@ -176,7 +176,7 @@ export function TransactionForm({
             setAccountId(e.target.value)
             setToAccountId('')
           }}
-          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-emerald-500"
+          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-primary"
         >
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
@@ -193,7 +193,7 @@ export function TransactionForm({
             value={toAccountId}
             onChange={(e) => setToAccountId(e.target.value)}
             required
-            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-primary"
           >
             <option value="" disabled>
               Select an account
@@ -218,7 +218,7 @@ export function TransactionForm({
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-primary"
           >
             {categoryOptions.map((c) => (
               <option key={c} value={c}>
@@ -237,7 +237,7 @@ export function TransactionForm({
             placeholder="e.g. Starbucks, Tenaga Nasional"
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
-            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-primary"
           />
         </div>
       )}
@@ -249,7 +249,7 @@ export function TransactionForm({
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-emerald-500"
+          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-primary"
         />
       </div>
 
@@ -260,7 +260,7 @@ export function TransactionForm({
           placeholder="e.g. Lunch with team"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+          className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-primary"
         />
       </div>
 
@@ -278,7 +278,7 @@ export function TransactionForm({
               key={r}
               onClick={() => setRecurrence(r)}
               className={`flex-1 rounded-lg py-2 text-xs font-medium transition ${
-                r === recurrence ? 'bg-emerald-500 text-white' : 'text-ink-soft hover:text-ink'
+                r === recurrence ? 'bg-primary text-white' : 'text-ink-soft hover:text-ink'
               }`}
             >
               {r === 'none' ? 'Once' : RECURRENCE_LABELS[r]}
@@ -293,7 +293,7 @@ export function TransactionForm({
               value={recurrenceEnd}
               min={date}
               onChange={(e) => setRecurrenceEnd(e.target.value)}
-              className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-emerald-500"
+              className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-primary"
             />
           </div>
         )}
@@ -304,7 +304,7 @@ export function TransactionForm({
           type="checkbox"
           checked={excluded}
           onChange={(e) => setExcluded(e.target.checked)}
-          className="h-4 w-4 rounded border-line accent-emerald-500"
+          className="h-4 w-4 rounded border-line accent-primary"
         />
         Exclude from budgets &amp; reports
       </label>
@@ -319,7 +319,7 @@ export function TransactionForm({
                 setSplitting(e.target.checked)
                 if (!e.target.checked) setSplitWith([])
               }}
-              className="h-4 w-4 rounded border-line accent-emerald-500"
+              className="h-4 w-4 rounded border-line accent-primary"
             />
             Split this bill
           </label>
@@ -351,7 +351,7 @@ export function TransactionForm({
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 rounded-xl bg-emerald-500 px-4 py-3 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+          className="flex-1 rounded-xl bg-primary px-4 py-3 font-medium text-white transition hover:bg-primary-hover disabled:opacity-50"
         >
           {saving ? 'Saving…' : saved ? 'Saved ✓' : isEditing ? 'Save changes' : 'Add transaction'}
         </button>

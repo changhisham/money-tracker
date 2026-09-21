@@ -26,7 +26,7 @@ export function StatCard({ label, value, icon, iconBg, trendPct, goodDirection, 
           {icon}
         </span>
         {trendPct !== null && (
-          <span className={`text-xs font-medium ${isGood ? 'text-emerald-500' : 'text-red-400'}`}>
+          <span className={`text-xs font-medium ${isGood ? 'text-income' : 'text-red-400'}`}>
             {trendUp ? '↗' : '↘'} {Math.abs(trendPct).toFixed(0)}%
           </span>
         )}

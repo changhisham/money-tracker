@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { deleteUser } from 'firebase/auth'
 import { format } from 'date-fns'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { AccentPicker } from '../components/AccentPicker'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useAuth } from '../context/AuthContext'
 import { auth } from '../firebase'
@@ -147,12 +148,12 @@ export function Settings({
                   placeholder="Your name"
                   value={displayName}
                   onChange={(e) => setDisplayNameInput(e.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2 text-sm text-ink outline-none focus:border-emerald-500"
+                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2 text-sm text-ink outline-none focus:border-primary"
                 />
                 <button
                   type="submit"
                   disabled={!displayName.trim()}
-                  className="shrink-0 rounded-xl bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+                  className="shrink-0 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
                 >
                   Save
                 </button>
@@ -211,6 +212,8 @@ export function Settings({
         <div className="rounded-2xl border border-line bg-surface p-4">
           <h2 className="mb-3 text-sm font-medium text-ink-soft">Appearance</h2>
           <ThemeToggle />
+          <h3 className="mt-4 mb-2 text-xs font-medium text-ink-soft">Accent color</h3>
+          <AccentPicker />
         </div>
 
         <div className="rounded-2xl border border-line bg-surface p-4">
@@ -218,7 +221,7 @@ export function Settings({
           <select
             value={preferences.defaultCurrency ?? currencyOptions[0]}
             onChange={(e) => onSetDefaultCurrency(e.target.value)}
-            className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink outline-none focus:border-primary"
           >
             {currencyOptions.map((c) => (
               <option key={c} value={c}>
@@ -260,7 +263,7 @@ export function Settings({
                 <select
                   value={rateCurrency}
                   onChange={(e) => setRateCurrency(e.target.value)}
-                  className="rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                  className="rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-primary"
                 >
                   {otherCurrencies.map((c) => (
                     <option key={c} value={c}>
@@ -276,12 +279,12 @@ export function Settings({
                   placeholder={`Rate to ${defaultCurrency}`}
                   value={rateValue}
                   onChange={(e) => setRateValue(e.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
                 />
                 <button
                   type="submit"
                   disabled={!rateValue}
-                  className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+                  className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
                 >
                   Save
                 </button>
@@ -322,12 +325,12 @@ export function Settings({
               placeholder="Add a custom category"
               value={newExpenseCategory}
               onChange={(e) => setNewExpenseCategory(e.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-base px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+              className="min-w-0 flex-1 rounded-xl border border-line bg-base px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
             />
             <button
               type="submit"
               disabled={!newExpenseCategory.trim() || isKnownExpenseCategory(newExpenseCategory.trim())}
-              className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
             >
               Add
             </button>
@@ -366,12 +369,12 @@ export function Settings({
               placeholder="Add a custom category"
               value={newIncomeCategory}
               onChange={(e) => setNewIncomeCategory(e.target.value)}
-              className="min-w-0 flex-1 rounded-xl border border-line bg-base px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+              className="min-w-0 flex-1 rounded-xl border border-line bg-base px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
             />
             <button
               type="submit"
               disabled={!newIncomeCategory.trim() || isKnownIncomeCategory(newIncomeCategory.trim())}
-              className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
             >
               Add
             </button>

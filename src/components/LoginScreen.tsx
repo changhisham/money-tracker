@@ -5,11 +5,11 @@ import { firebaseConfigured } from '../firebase'
 const HIGHLIGHTS = [
   { dot: 'bg-red-500', title: 'Phone bill', subtitle: 'Due in 3 days', pill: 'Due', pillClass: 'bg-red-100 text-red-600' },
   {
-    dot: 'bg-emerald-500',
+    dot: 'bg-income',
     title: 'Budget usage',
     subtitle: '47% of RM500 spent',
     pill: 'On track',
-    pillClass: 'bg-emerald-100 text-emerald-600',
+    pillClass: 'bg-income/15 text-income',
   },
   {
     dot: 'bg-amber-500',
@@ -105,7 +105,7 @@ export function LoginScreen() {
                     setResetting(false)
                     setResetSent(false)
                   }}
-                  className="w-full rounded-xl bg-emerald-500 px-4 py-3 font-medium text-white transition hover:bg-emerald-400"
+                  className="w-full rounded-xl bg-primary px-4 py-3 font-medium text-white transition hover:bg-primary-hover"
                 >
                   Back to sign in
                 </button>
@@ -117,13 +117,13 @@ export function LoginScreen() {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                    className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-primary"
                   />
                   {error && <p className="text-sm text-red-400">{error}</p>}
                   <button
                     type="submit"
                     disabled={busy}
-                    className="w-full rounded-xl bg-emerald-500 px-4 py-3 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                    className="w-full rounded-xl bg-primary px-4 py-3 font-medium text-white transition hover:bg-primary-hover disabled:opacity-50"
                   >
                     {busy ? 'Sending…' : 'Send reset link'}
                   </button>
@@ -160,7 +160,7 @@ export function LoginScreen() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                    className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-primary"
                   />
                 </div>
                 <div>
@@ -173,7 +173,7 @@ export function LoginScreen() {
                           setResetting(true)
                           setError(null)
                         }}
-                        className="text-xs font-medium text-emerald-500 hover:text-emerald-400"
+                        className="text-xs font-medium text-primary hover:text-primary-hover"
                       >
                         Forgot password?
                       </button>
@@ -186,7 +186,7 @@ export function LoginScreen() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                    className="w-full rounded-xl border border-line bg-base px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-primary"
                   />
                 </div>
 
@@ -195,7 +195,7 @@ export function LoginScreen() {
                 <button
                   type="submit"
                   disabled={busy}
-                  className="w-full rounded-xl bg-emerald-500 px-4 py-3 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+                  className="w-full rounded-xl bg-primary px-4 py-3 font-medium text-white transition hover:bg-primary-hover disabled:opacity-50"
                 >
                   {busy ? 'Please wait…' : mode === 'signIn' ? 'Sign in' : 'Sign up'}
                 </button>
@@ -209,7 +209,7 @@ export function LoginScreen() {
                 className="mt-5 border-t border-line pt-5 text-center text-sm text-ink-faint hover:text-ink"
               >
                 {mode === 'signIn' ? "Don't have an account? " : 'Already have an account? '}
-                <span className="font-medium text-emerald-500">
+                <span className="font-medium text-primary">
                   {mode === 'signIn' ? 'Create one' : 'Sign in'}
                 </span>
               </button>
@@ -218,7 +218,7 @@ export function LoginScreen() {
         </div>
 
         {/* Marketing panel */}
-        <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-700 to-indigo-900 p-8 text-white lg:flex">
+        <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary-strong via-primary to-indigo-900 p-8 text-white lg:flex">
           <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-white/10" />
           <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-white/5" />
 

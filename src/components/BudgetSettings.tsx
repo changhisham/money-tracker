@@ -51,7 +51,7 @@ export function BudgetSettings({ budgets, knownCurrencies, knownCategories, onSa
               key={p}
               onClick={() => setPeriod(p)}
               className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
-                p === period ? 'bg-emerald-500 text-white' : 'text-ink-soft hover:text-ink'
+                p === period ? 'bg-primary text-white' : 'text-ink-soft hover:text-ink'
               }`}
             >
               {PERIOD_LABELS[p]}
@@ -64,7 +64,7 @@ export function BudgetSettings({ budgets, knownCurrencies, knownCategories, onSa
           <select
             value={category}
             onChange={(ev) => setCategory(ev.target.value)}
-            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-ink outline-none focus:border-primary"
           >
             <option value={ALL_CATEGORIES}>All categories</option>
             {categoryOptions.map((c) => (
@@ -85,12 +85,12 @@ export function BudgetSettings({ budgets, knownCurrencies, knownCategories, onSa
             placeholder="Budget amount"
             value={amount}
             onChange={(ev) => setAmount(ev.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 py-3 text-ink placeholder-ink-faint outline-none focus:border-primary"
           />
           <select
             value={currency}
             onChange={(ev) => setCurrency(ev.target.value)}
-            className="w-24 rounded-xl border border-line bg-surface px-2 text-ink outline-none focus:border-emerald-500"
+            className="w-24 rounded-xl border border-line bg-surface px-2 text-ink outline-none focus:border-primary"
           >
             {currencyOptions.map((c) => (
               <option key={c} value={c}>
@@ -103,7 +103,7 @@ export function BudgetSettings({ budgets, knownCurrencies, knownCategories, onSa
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-xl bg-emerald-500 px-4 py-3 font-medium text-white transition hover:bg-emerald-400 disabled:opacity-50"
+          className="w-full rounded-xl bg-primary px-4 py-3 font-medium text-white transition hover:bg-primary-hover disabled:opacity-50"
         >
           {saving ? 'Saving…' : `Save ${PERIOD_LABELS[period].toLowerCase()} budget`}
         </button>

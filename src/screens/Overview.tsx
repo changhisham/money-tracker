@@ -226,7 +226,7 @@ export function Overview({
         />
         <button
           onClick={onViewAnalytics}
-          className="mt-2 text-xs font-medium text-emerald-500 hover:text-emerald-400"
+          className="mt-2 text-xs font-medium text-primary hover:text-primary-hover"
         >
           View analytics →
         </button>
@@ -243,7 +243,7 @@ export function Overview({
             <h2 className="text-sm font-medium text-ink-soft">Recent transactions</h2>
             <button
               onClick={onViewAllTransactions}
-              className="text-xs font-medium text-emerald-500 hover:text-emerald-400"
+              className="text-xs font-medium text-primary hover:text-primary-hover"
             >
               View all →
             </button>

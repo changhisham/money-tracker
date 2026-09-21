@@ -33,7 +33,7 @@ export function DebtsWidget({ debts, people, transactions, onOpenPeople }: Props
     <div className="animate-fade-in rounded-2xl border border-line bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium text-ink-soft">Friends &amp; debts</h2>
-        <button onClick={onOpenPeople} className="text-xs font-medium text-emerald-500 hover:text-emerald-400">
+        <button onClick={onOpenPeople} className="text-xs font-medium text-primary hover:text-primary-hover">
           View all →
         </button>
       </div>
@@ -47,7 +47,7 @@ export function DebtsWidget({ debts, people, transactions, onOpenPeople }: Props
         </div>
         <div>
           <p className="text-[11px] text-ink-faint">Owed to you</p>
-          <p className="text-lg font-semibold text-emerald-500">
+          <p className="text-lg font-semibold text-income">
             {owedToYouTotals.length > 0
               ? owedToYouTotals.map((t) => formatMoney(t.amount, t.currency)).join(' · ')
               : '—'}

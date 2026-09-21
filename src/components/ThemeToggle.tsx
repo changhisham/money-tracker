@@ -17,7 +17,7 @@ export function ThemeToggle() {
           type="button"
           onClick={() => setTheme(opt.id)}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition ${
-            theme === opt.id ? 'bg-emerald-500 text-white' : 'text-ink-soft hover:text-ink'
+            theme === opt.id ? 'bg-primary text-white' : 'text-ink-soft hover:text-ink'
           }`}
         >
           <span aria-hidden>{opt.icon}</span>

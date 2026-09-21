@@ -21,9 +21,9 @@ export function AddChooser({ onClose, onChoose }: Props) {
           <button
             key={type}
             onClick={() => onChoose(type)}
-            className="flex w-full items-center gap-3 rounded-xl border border-line bg-base px-4 py-3.5 text-left transition hover:border-emerald-500 hover:bg-surface-hover"
+            className="flex w-full items-center gap-3 rounded-xl border border-line bg-base px-4 py-3.5 text-left transition hover:border-primary hover:bg-surface-hover"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Icon className="h-5 w-5" aria-hidden />
             </span>
             <span>

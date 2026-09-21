@@ -65,7 +65,7 @@ export function Transactions({ transactions, accounts, onDelete, onEdit }: Props
           placeholder="Search transactions…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+          className="w-full rounded-xl border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
         />
       </div>
 
@@ -112,7 +112,7 @@ export function Transactions({ transactions, accounts, onDelete, onEdit }: Props
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as TransactionType | typeof ALL_TYPES)}
-            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-emerald-500 sm:flex-none"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-primary sm:flex-none"
           >
             <option value={ALL_TYPES}>All types</option>
             <option value="expense">Expense</option>
@@ -122,7 +122,7 @@ export function Transactions({ transactions, accounts, onDelete, onEdit }: Props
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-emerald-500 sm:flex-none"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-primary sm:flex-none"
           >
             <option value={ALL_CATEGORIES}>All categories</option>
             {categories.map((c) => (

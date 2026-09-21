@@ -104,6 +104,44 @@ export function debtsWithDueDates(debts: Debt[], withinDays = 9999): DueDebt[] {
     .sort((a, b) => a.daysUntil - b.daysUntil)
 }
 
+export interface PersonStats {
+  /** All debts ever logged with this person, settled or not. */
+  debtCount: number
+  settledCount: number
+  /** Currently open debts past their due date. */
+  overdueCount: number
+  /** Lifetime amount borrowed from them (all 'i_owe' debts, regardless of settled state). */
+  totalBorrowed: CurrencyTotal[]
+  /** Lifetime amount lent to them (all 'owed_to_me' debts, regardless of settled state). */
+  totalLent: CurrencyTotal[]
+}
+
+function sumAmountByCurrency(debts: Debt[]): CurrencyTotal[] {
+  const map = new Map<string, number>()
+  for (const d of debts) {
+    map.set(d.currency, (map.get(d.currency) ?? 0) + d.amount)
+  }
+  return [...map.entries()].map(([currency, amount]) => ({ currency, amount }))
+}
+
+/** Lifetime stats for a person — used for the "more detail" summary in the People screen. */
+export function personStats(debts: Debt[], personId: string): PersonStats {
+  const mine = debts.filter((d) => d.personId === personId)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const overdueCount = mine.filter(
+    (d) => isDebtOpen(d) && d.dueDate && new Date(`${d.dueDate}T00:00:00`) < today,
+  ).length
+
+  return {
+    debtCount: mine.length,
+    settledCount: mine.filter((d) => d.settled).length,
+    overdueCount,
+    totalBorrowed: sumAmountByCurrency(mine.filter((d) => d.direction === 'i_owe')),
+    totalLent: sumAmountByCurrency(mine.filter((d) => d.direction === 'owed_to_me')),
+  }
+}
+
 /**
  * Converts currency totals into a single number using manual rates (units of `displayCurrency`
  * per 1 unit of the source currency). Currencies without a known rate are skipped; their

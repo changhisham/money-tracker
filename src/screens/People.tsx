@@ -8,6 +8,7 @@ import {
   debtsForPerson,
   oldestUnsettledDate,
   personDebtTotals,
+  personStats,
   totalOwedToYouDirect,
   totalYouOwe,
 } from '../utils/debts'
@@ -39,6 +40,15 @@ interface Props {
   onToggleDebtSettled: (debt: Debt) => Promise<void>
   onDeleteDebt: (id: string) => Promise<void>
   onRecordPayment: (debt: Debt, amount: number, date: string, accountId: string | null) => Promise<void>
+  onUpdateDebt: (id: string, changes: { amount: number; note: string | null; dueDate: string | null }) => Promise<void>
+}
+
+type SortOption = 'name' | 'amount' | 'recent'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  name: 'Name',
+  amount: 'Amount owed',
+  recent: 'Most recent activity',
 }
 
 function dueBadge(dueDate: string): { label: string; className: string } | null {
@@ -66,6 +76,7 @@ export function People({
   onToggleDebtSettled,
   onDeleteDebt,
   onRecordPayment,
+  onUpdateDebt,
 }: Props) {
   const currencyOptions = [...new Set([...knownCurrencies, ...DEFAULT_CURRENCIES])]
   const displayCurrency = preferences.defaultCurrency ?? currencyOptions[0]
@@ -75,6 +86,8 @@ export function People({
   const [expanded, setExpanded] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Person | null>(null)
   const [pendingDeleteDebt, setPendingDeleteDebt] = useState<Debt | null>(null)
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('recent')
 
   const [loggingDebt, setLoggingDebt] = useState(false)
   const [debtPersonId, setDebtPersonId] = useState('')
@@ -93,6 +106,12 @@ export function People({
   const [paymentAccountId, setPaymentAccountId] = useState('')
   const [savingPayment, setSavingPayment] = useState(false)
 
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null)
+  const [editAmount, setEditAmount] = useState('')
+  const [editNote, setEditNote] = useState('')
+  const [editDueDate, setEditDueDate] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+
   const splitOwed = owedByPerson(transactions)
   const youOweTotals = totalYouOwe(debts)
   const owedToYouDirectTotals = totalOwedToYouDirect(debts)
@@ -108,6 +127,49 @@ export function People({
 
   const youOweConverted = convertTotals(youOweTotals, displayCurrency, preferences.exchangeRates)
   const owedToYouConverted = convertTotals(owedToYouCombinedTotals, displayCurrency, preferences.exchangeRates)
+
+  const personRows = people.map((person) => {
+    const { youOwe, owesYou: directOwesYou } = personDebtTotals(debts, person.id)
+    const splitTotals = splitOwed.find((o) => o.personId === person.id)?.byCurrency ?? []
+    const owesYouMap = new Map<string, number>()
+    for (const t of splitTotals) owesYouMap.set(t.currency, (owesYouMap.get(t.currency) ?? 0) + t.amount)
+    for (const t of directOwesYou) owesYouMap.set(t.currency, (owesYouMap.get(t.currency) ?? 0) + t.amount)
+    const owesYouTotals = [...owesYouMap.entries()].map(([currency, amount]) => ({ currency, amount }))
+
+    const involvedTransactions = transactionsInvolvingPerson(transactions, person.id)
+    const personDebts = debtsForPerson(debts, person.id)
+    const owingSince = oldestUnsettledDate(debts, person.id)
+    const allSettled = youOwe.length === 0 && owesYouTotals.length === 0
+    const stats = personStats(debts, person.id)
+
+    const lastActivity = Math.max(
+      person.createdAt,
+      ...personDebts.map((d) => d.createdAt),
+      ...involvedTransactions.map((t) => t.createdAt),
+    )
+    const totalAmount = [...youOwe, ...owesYouTotals].reduce((sum, t) => sum + t.amount, 0)
+
+    return {
+      person,
+      youOwe,
+      owesYouTotals,
+      involvedTransactions,
+      personDebts,
+      owingSince,
+      allSettled,
+      stats,
+      lastActivity,
+      totalAmount,
+    }
+  })
+
+  const visibleRows = personRows
+    .filter((row) => row.person.name.toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.person.name.localeCompare(b.person.name)
+      if (sortBy === 'amount') return b.totalAmount - a.totalAmount
+      return b.lastActivity - a.lastActivity
+    })
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
@@ -173,6 +235,26 @@ export function People({
     }
   }
 
+  function openEditForm(debt: Debt) {
+    setEditingDebtId(debt.id)
+    setEditAmount(String(debt.amount))
+    setEditNote(debt.note ?? '')
+    setEditDueDate(debt.dueDate ?? '')
+  }
+
+  async function handleEditDebt(e: FormEvent, debt: Debt) {
+    e.preventDefault()
+    const amt = Number(editAmount)
+    if (!amt || amt <= 0) return
+    setSavingEdit(true)
+    try {
+      await onUpdateDebt(debt.id, { amount: amt, note: editNote.trim() || null, dueDate: editDueDate || null })
+      setEditingDebtId(null)
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       {(youOweTotals.length > 0 || owedToYouCombinedTotals.length > 0) && (
@@ -194,7 +276,7 @@ export function People({
           {owedToYouCombinedTotals.length > 0 && (
             <div className="rounded-2xl border border-line bg-surface p-4 text-center">
               <p className="text-xs text-ink-faint">Owed to you</p>
-              <p className="mt-1 text-2xl font-semibold text-emerald-500">
+              <p className="mt-1 text-2xl font-semibold text-income">
                 {owedToYouCombinedTotals.map((t) => formatMoney(t.amount, t.currency)).join(' · ')}
               </p>
               {owedToYouCombinedTotals.length > 1 && owedToYouConverted.converted > 0 && (
@@ -214,12 +296,12 @@ export function People({
           placeholder="Add a person"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+          className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
         />
         <button
           type="submit"
           disabled={adding || !newName.trim()}
-          className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+          className="shrink-0 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
         >
           Add
         </button>
@@ -231,7 +313,7 @@ export function People({
           {people.length > 0 && (
             <button
               onClick={() => setLoggingDebt((v) => !v)}
-              className="text-xs font-medium text-emerald-500 hover:text-emerald-400"
+              className="text-xs font-medium text-primary hover:text-primary-hover"
             >
               {loggingDebt ? 'Cancel' : '+ Log a debt'}
             </button>
@@ -247,7 +329,7 @@ export function People({
                 <select
                   value={debtPersonId}
                   onChange={(e) => setDebtPersonId(e.target.value)}
-                  className="flex-1 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                  className="flex-1 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-primary"
                 >
                   <option value="" disabled>
                     Select person…
@@ -261,7 +343,7 @@ export function People({
                 <select
                   value={direction}
                   onChange={(e) => setDirection(e.target.value as DebtDirection)}
-                  className="flex-1 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                  className="flex-1 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-primary"
                 >
                   <option value="i_owe">{DEBT_DIRECTION_LABELS.i_owe}</option>
                   <option value="owed_to_me">{DEBT_DIRECTION_LABELS.owed_to_me}</option>
@@ -277,12 +359,12 @@ export function People({
                   placeholder="Amount"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
                 />
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="w-20 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                  className="w-20 rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-primary"
                 >
                   {currencyOptions.map((c) => (
                     <option key={c} value={c}>
@@ -299,7 +381,7 @@ export function People({
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                    className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
                   />
                 </div>
                 <div className="flex-1">
@@ -308,7 +390,7 @@ export function People({
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                    className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -318,13 +400,13 @@ export function People({
                 placeholder="Note, e.g. Dinner, rent, borrowed cash (optional)"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
               />
 
               <button
                 type="submit"
                 disabled={savingDebt || !debtPersonId || !amount}
-                className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+                className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
               >
                 {savingDebt ? 'Saving…' : 'Save debt'}
               </button>
@@ -339,30 +421,46 @@ export function People({
         </p>
       ) : (
         <>
-          <div className="flex items-center justify-end">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search people…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
+            />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              aria-label="Sort people"
+              className="rounded-xl border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-primary"
+            >
+              {(Object.keys(SORT_LABELS) as SortOption[]).map((opt) => (
+                <option key={opt} value={opt}>
+                  Sort: {SORT_LABELS[opt]}
+                </option>
+              ))}
+            </select>
             <button
               onClick={() => downloadCsv('debts.csv', debtsToCsv(debts, people))}
               disabled={debts.length === 0}
-              className="rounded-lg border border-line px-2.5 py-1 text-xs font-medium text-ink-soft hover:bg-surface-hover disabled:opacity-40"
+              className="shrink-0 rounded-lg border border-line px-2.5 py-2 text-xs font-medium text-ink-soft hover:bg-surface-hover disabled:opacity-40"
             >
               Export debts CSV
             </button>
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {people.map((person) => {
-              const { youOwe, owesYou: directOwesYou } = personDebtTotals(debts, person.id)
-              const splitTotals = splitOwed.find((o) => o.personId === person.id)?.byCurrency ?? []
-              const owesYouMap = new Map<string, number>()
-              for (const t of splitTotals) owesYouMap.set(t.currency, (owesYouMap.get(t.currency) ?? 0) + t.amount)
-              for (const t of directOwesYou) owesYouMap.set(t.currency, (owesYouMap.get(t.currency) ?? 0) + t.amount)
-              const owesYouTotals = [...owesYouMap.entries()].map(([currency, amount]) => ({ currency, amount }))
+          {visibleRows.length === 0 && (
+            <p className="rounded-2xl border border-line bg-surface p-6 text-center text-sm text-ink-faint">
+              No people match "{search}".
+            </p>
+          )}
 
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleRows.map((row) => {
+              const { person, youOwe, owesYouTotals, involvedTransactions, personDebts, owingSince, allSettled, stats } =
+                row
               const isExpanded = expanded === person.id
-              const involvedTransactions = transactionsInvolvingPerson(transactions, person.id)
-              const personDebts = debtsForPerson(debts, person.id)
-              const owingSince = oldestUnsettledDate(debts, person.id)
-              const allSettled = youOwe.length === 0 && owesYouTotals.length === 0
 
               return (
                 <div key={person.id} className="rounded-2xl border border-line bg-surface p-4">
@@ -399,7 +497,42 @@ export function People({
                   </div>
 
                   {isExpanded && (
-                    <ul className="mt-3 space-y-3 border-t border-line pt-3">
+                    <div className="mt-3 border-t border-line pt-3">
+                      {stats.debtCount > 0 && (
+                        <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+                          <div className="rounded-lg bg-surface-hover px-2 py-1.5">
+                            <p className="text-sm font-semibold text-ink">{stats.debtCount}</p>
+                            <p className="text-[10px] text-ink-faint">Debts logged</p>
+                          </div>
+                          <div className="rounded-lg bg-surface-hover px-2 py-1.5">
+                            <p className="text-sm font-semibold text-ink">{stats.settledCount}</p>
+                            <p className="text-[10px] text-ink-faint">Settled</p>
+                          </div>
+                          <div className="rounded-lg bg-surface-hover px-2 py-1.5">
+                            <p className={`text-sm font-semibold ${stats.overdueCount > 0 ? 'text-red-400' : 'text-ink'}`}>
+                              {stats.overdueCount}
+                            </p>
+                            <p className="text-[10px] text-ink-faint">Overdue</p>
+                          </div>
+                          {stats.totalBorrowed.length > 0 && (
+                            <p className="col-span-3 text-[11px] text-ink-faint">
+                              Lifetime borrowed from them:{' '}
+                              <span className="font-medium text-ink-soft">
+                                {stats.totalBorrowed.map((t) => formatMoney(t.amount, t.currency)).join(' · ')}
+                              </span>
+                            </p>
+                          )}
+                          {stats.totalLent.length > 0 && (
+                            <p className="col-span-3 text-[11px] text-ink-faint">
+                              Lifetime lent to them:{' '}
+                              <span className="font-medium text-ink-soft">
+                                {stats.totalLent.map((t) => formatMoney(t.amount, t.currency)).join(' · ')}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      <ul className="space-y-3">
                       {involvedTransactions.length === 0 && personDebts.length === 0 && (
                         <p className="text-xs text-ink-faint">No shared expenses or debts yet.</p>
                       )}
@@ -409,6 +542,7 @@ export function People({
                         const hasPayments = paid > 0
                         const badge = d.dueDate && !d.settled ? dueBadge(d.dueDate) : null
                         const isPaying = payingDebtId === d.id
+                        const isEditing = editingDebtId === d.id
                         const matchingAccounts = accounts.filter((a) => a.currency === d.currency)
 
                         return (
@@ -431,7 +565,7 @@ export function People({
                                   onClick={() => onToggleDebtSettled(d)}
                                   className={`rounded-lg px-2.5 py-1 text-xs font-medium ${
                                     d.settled
-                                      ? 'bg-emerald-500/10 text-emerald-500'
+                                      ? 'bg-success/10 text-success'
                                       : 'bg-surface-hover text-ink-soft hover:text-ink'
                                   }`}
                                 >
@@ -445,6 +579,15 @@ export function People({
                                     {isPaying ? 'Cancel' : '+ Payment'}
                                   </button>
                                 )}
+                                {!d.settled && (
+                                  <button
+                                    onClick={() => (isEditing ? setEditingDebtId(null) : openEditForm(d))}
+                                    aria-label="Edit debt"
+                                    className="text-ink-faint hover:text-primary"
+                                  >
+                                    ✏️
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => setPendingDeleteDebt(d)}
                                   aria-label="Delete debt"
@@ -454,6 +597,57 @@ export function People({
                                 </button>
                               </span>
                             </div>
+
+                            {hasPayments && (d.payments?.length ?? 0) > 0 && (
+                              <ul className="space-y-1 border-l border-line pl-2.5">
+                                {d.payments!.map((p) => (
+                                  <li key={p.id} className="flex items-center justify-between text-[11px] text-ink-faint">
+                                    <span>Payment on {relativeDayLabel(p.date)}</span>
+                                    <span className="font-medium text-ink-soft">{formatMoney(p.amount, d.currency)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+
+                            {isEditing && (
+                              <form
+                                onSubmit={(e) => handleEditDebt(e, d)}
+                                className="space-y-2 rounded-xl border border-line bg-base p-3"
+                              >
+                                <div className="flex gap-2">
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="0.01"
+                                    min="0.01"
+                                    placeholder="Amount"
+                                    value={editAmount}
+                                    onChange={(e) => setEditAmount(e.target.value)}
+                                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+                                  />
+                                  <input
+                                    type="date"
+                                    value={editDueDate}
+                                    onChange={(e) => setEditDueDate(e.target.value)}
+                                    className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+                                  />
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Note (optional)"
+                                  value={editNote}
+                                  onChange={(e) => setEditNote(e.target.value)}
+                                  className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none focus:border-primary"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={savingEdit || !editAmount}
+                                  className="w-full rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary-hover disabled:opacity-50"
+                                >
+                                  {savingEdit ? 'Saving…' : 'Save changes'}
+                                </button>
+                              </form>
+                            )}
 
                             {isPaying && (
                               <form
@@ -468,13 +662,13 @@ export function People({
                                     min="0.01"
                                     value={paymentAmount}
                                     onChange={(e) => setPaymentAmount(e.target.value)}
-                                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-emerald-500"
+                                    className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
                                   />
                                   <input
                                     type="date"
                                     value={paymentDate}
                                     onChange={(e) => setPaymentDate(e.target.value)}
-                                    className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-emerald-500"
+                                    className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
                                   />
                                 </div>
                                 {matchingAccounts.length > 0 ? (
@@ -484,7 +678,7 @@ export function People({
                                         type="checkbox"
                                         checked={recordAsTxn}
                                         onChange={(e) => setRecordAsTxn(e.target.checked)}
-                                        className="h-4 w-4 rounded border-line accent-emerald-500"
+                                        className="h-4 w-4 rounded border-line accent-primary"
                                       />
                                       Also record as a transaction (
                                       {d.direction === 'i_owe' ? 'expense' : 'income'})
@@ -493,7 +687,7 @@ export function People({
                                       <select
                                         value={paymentAccountId}
                                         onChange={(e) => setPaymentAccountId(e.target.value)}
-                                        className="w-full rounded-lg border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-emerald-500"
+                                        className="w-full rounded-lg border border-line bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-primary"
                                       >
                                         {matchingAccounts.map((a) => (
                                           <option key={a.id} value={a.id}>
@@ -512,7 +706,7 @@ export function People({
                                 <button
                                   type="submit"
                                   disabled={savingPayment || !paymentAmount}
-                                  className="w-full rounded-lg bg-emerald-500 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+                                  className="w-full rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white hover:bg-primary-hover disabled:opacity-50"
                                 >
                                   {savingPayment ? 'Saving…' : 'Save payment'}
                                 </button>
@@ -532,7 +726,7 @@ export function People({
                               onClick={() => onToggleSettled(t, person.id)}
                               className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium ${
                                 share.settled
-                                  ? 'bg-emerald-500/10 text-emerald-500'
+                                  ? 'bg-success/10 text-success'
                                   : 'bg-surface-hover text-ink-soft hover:text-ink'
                               }`}
                             >
@@ -541,7 +735,8 @@ export function People({
                           </li>
                         )
                       })}
-                    </ul>
+                      </ul>
+                    </div>
                   )}
                 </div>
               )

@@ -21,7 +21,13 @@
   --color-danger: #ef4444;
   --color-info: #3987e5;
   --color-success: #10b981;
-  --color-primary: #10b981;
+
+  /* Brand/UI accent — buttons, links, focus rings, selected states. Swapped by the
+     accent picker (Settings ▸ Appearance); distinct from the fixed financial semantics
+     above (income/success stay green no matter which accent is chosen). */
+  --color-primary: #0284c7;
+  --color-primary-hover: #0ea5e9;
+  --color-primary-strong: #0369a1;
 }
 
 .dark {
@@ -40,7 +46,37 @@
   --color-danger: #f87171;
   --color-info: #60a5fa;
   --color-success: #34d399;
-  --color-primary: #34d399;
+}
+
+/* Accent palettes — toggled via [data-accent] on <html>, set by AccentContext. */
+[data-accent='sky'] {
+  --color-primary: #0284c7;
+  --color-primary-hover: #0ea5e9;
+  --color-primary-strong: #0369a1;
+}
+
+[data-accent='indigo'] {
+  --color-primary: #4f46e5;
+  --color-primary-hover: #6366f1;
+  --color-primary-strong: #4338ca;
+}
+
+[data-accent='amber'] {
+  --color-primary: #d97706;
+  --color-primary-hover: #f59e0b;
+  --color-primary-strong: #b45309;
+}
+
+[data-accent='emerald'] {
+  --color-primary: #059669;
+  --color-primary-hover: #10b981;
+  --color-primary-strong: #047857;
+}
+
+[data-accent='rose'] {
+  --color-primary: #e11d48;
+  --color-primary-hover: #f43f5e;
+  --color-primary-strong: #be123c;
 }
 
 html,

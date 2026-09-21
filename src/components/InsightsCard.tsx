@@ -45,7 +45,7 @@ export function InsightsCard({ transactions, period, anchor, currency }: Props) 
       {change !== null && (
         <div className="rounded-xl border border-line bg-surface p-3">
           <p className="text-xs text-ink-faint">vs last period</p>
-          <p className={`mt-0.5 text-sm font-semibold ${change > 0 ? 'text-red-400' : 'text-emerald-500'}`}>
+          <p className={`mt-0.5 text-sm font-semibold ${change > 0 ? 'text-red-400' : 'text-income'}`}>
             {change > 0 ? '↑' : '↓'} {Math.abs(change).toFixed(0)}%
           </p>
         </div>
