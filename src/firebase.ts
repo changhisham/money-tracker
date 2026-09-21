@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getAuth, type Auth } from 'firebase/auth'
+import { getFirestore, type Firestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,7 +15,19 @@ export const firebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId,
 )
 
-const app = initializeApp(firebaseConfig)
+// Only touch the Firebase SDK when real credentials are present — getAuth() throws
+// synchronously on a missing/invalid API key, which would crash the app before
+// LoginScreen ever gets a chance to show its "not configured" message.
+let auth: Auth
+let db: Firestore
 
-export const auth = getAuth(app)
-export const db = getFirestore(app)
+if (firebaseConfigured) {
+  const app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+  db = getFirestore(app)
+} else {
+  auth = null as unknown as Auth
+  db = null as unknown as Firestore
+}
+
+export { auth, db }

@@ -43,6 +43,44 @@ export interface Person {
 
 export type NewPerson = Omit<Person, 'id' | 'createdAt'>
 
+export type DebtDirection = 'i_owe' | 'owed_to_me'
+
+export interface DebtPayment {
+  id: string
+  amount: number
+  date: string // ISO date
+  createdAt: number
+  /** Set when this payment was also recorded as a real transaction moving money. */
+  transactionId?: string | null
+}
+
+export interface Debt {
+  id: string
+  personId: string
+  /** 'i_owe' = you borrowed from them; 'owed_to_me' = you lent to them directly (not a split bill). */
+  direction: DebtDirection
+  amount: number
+  currency: string
+  /** ISO date the debt started (when the money changed hands). */
+  date: string
+  note?: string | null
+  /** Optional ISO date it's expected to be paid back by. */
+  dueDate?: string | null
+  /** Partial or full repayments logged against this debt. */
+  payments?: DebtPayment[] | null
+  /** true once the full amount has been paid off (or manually marked settled). */
+  settled: boolean
+  settledAt?: number | null
+  createdAt: number
+}
+
+export type NewDebt = Omit<Debt, 'id' | 'createdAt'>
+
+export const DEBT_DIRECTION_LABELS: Record<DebtDirection, string> = {
+  i_owe: 'You owe them',
+  owed_to_me: 'They owe you',
+}
+
 export interface SplitShare {
   personId: string
   amount: number
@@ -142,4 +180,6 @@ export interface Preferences {
   defaultCurrency?: string
   customExpenseCategories?: string[]
   customIncomeCategories?: string[]
+  /** Manual conversion rates: units of `defaultCurrency` equal to 1 unit of the given currency. */
+  exchangeRates?: Record<string, number>
 }

@@ -14,6 +14,7 @@ import { Loans } from './screens/Loans'
 import { useTransactions } from './hooks/useTransactions'
 import { useAccounts } from './hooks/useAccounts'
 import { usePeople } from './hooks/usePeople'
+import { useDebts } from './hooks/useDebts'
 import { useBudgets } from './hooks/useBudgets'
 import { usePreferences } from './hooks/usePreferences'
 import { useRecurring } from './hooks/useRecurring'
@@ -21,7 +22,7 @@ import { computeAccountBalances } from './utils/accountBalances'
 import { toggleSplitSettled } from './utils/splits'
 import { TransactionList } from './components/TransactionList'
 import { DEFAULT_CURRENCIES } from './types'
-import type { Transaction } from './types'
+import type { Debt, Transaction } from './types'
 
 const TAB_WIDTH: Record<Tab, string> = {
   dashboard: 'max-w-6xl',
@@ -41,9 +42,17 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
     useTransactions(uid)
   const { accounts, loading: accountsLoading, addAccount, deleteAccount } = useAccounts(uid)
   const { people, addPerson, deletePerson } = usePeople(uid)
+  const { debts, addDebt, deleteDebt, toggleDebtSettled, recordPayment } = useDebts(uid)
   const { budgets, setBudget, deleteBudget } = useBudgets(uid)
-  const { preferences, setDefaultCurrency, setDisplayName, addCustomCategory, removeCustomCategory } =
-    usePreferences(uid)
+  const {
+    preferences,
+    setDefaultCurrency,
+    setDisplayName,
+    addCustomCategory,
+    removeCustomCategory,
+    setExchangeRate,
+    removeExchangeRate,
+  } = usePreferences(uid)
   useRecurring(uid, transactions, transactionsLoading, addTransaction)
 
   const bootstrapped = useRef(false)
@@ -109,6 +118,31 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
     await updateTransaction(uid, transaction.id, { splitWith: toggleSplitSettled(transaction, personId) })
   }
 
+  async function handleRecordPayment(debt: Debt, amount: number, date: string, accountId: string | null) {
+    let transactionId: string | null = null
+    if (accountId) {
+      const person = people.find((p) => p.id === debt.personId)
+      transactionId = await addTransaction(uid, {
+        type: debt.direction === 'i_owe' ? 'expense' : 'income',
+        amount,
+        currency: debt.currency,
+        accountId,
+        toAccountId: null,
+        category: 'Other',
+        payee: person?.name ?? null,
+        tags: null,
+        note: `Debt ${debt.direction === 'i_owe' ? 'repayment to' : 'repayment from'} ${person?.name ?? 'friend'}${debt.note ? ` — ${debt.note}` : ''}`,
+        date,
+        recurrence: null,
+        recurringGroupId: null,
+        recurrenceEnd: null,
+        excluded: false,
+        splitWith: null,
+      })
+    }
+    await recordPayment(uid, debt, amount, date, transactionId)
+  }
+
   return (
     <div className="min-h-dvh bg-base">
       <Sidebar tab={tab} onChange={changeTab} name={displayName} email={email} onSignOut={() => logOut()} />
@@ -127,11 +161,14 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
               transactions={transactions}
               accounts={accounts}
               budgets={budgets}
+              people={people}
+              debts={debts}
               name={displayName}
               email={email}
               onDelete={(id) => deleteTransaction(uid, id)}
               onEdit={openEdit}
               onAddTransaction={(values) => addTransaction(uid, values)}
+              onOpenPeople={() => changeTab('people')}
             />
           )}
           {tab === 'add' && (
@@ -189,9 +226,17 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
             <People
               people={people}
               transactions={transactions}
+              debts={debts}
+              accounts={accounts}
+              knownCurrencies={knownCurrencies}
+              preferences={preferences}
               onAddPerson={(name) => addPerson(uid, { name })}
               onDeletePerson={(id) => deletePerson(uid, id)}
               onToggleSettled={handleToggleSettled}
+              onAddDebt={(debt) => addDebt(uid, debt)}
+              onToggleDebtSettled={(debt) => toggleDebtSettled(uid, debt)}
+              onDeleteDebt={(id) => deleteDebt(uid, id)}
+              onRecordPayment={handleRecordPayment}
             />
           )}
           {tab === 'settings' && (
@@ -208,6 +253,8 @@ function AuthedApp({ uid, email }: { uid: string; email: string | null }) {
               onRemoveExpenseCategory={(category) => removeCustomCategory(uid, 'customExpenseCategories', category)}
               onAddIncomeCategory={(category) => addCustomCategory(uid, 'customIncomeCategories', category)}
               onRemoveIncomeCategory={(category) => removeCustomCategory(uid, 'customIncomeCategories', category)}
+              onSetExchangeRate={(currency, rate) => setExchangeRate(uid, currency, rate)}
+              onRemoveExchangeRate={(currency) => removeExchangeRate(uid, currency)}
               onOpenAccounts={() => changeTab('accounts')}
               onOpenLoans={() => changeTab('loans')}
             />

@@ -10,7 +10,7 @@ export function useRecurring(
   uid: string | undefined,
   transactions: Transaction[],
   loading: boolean,
-  addTransaction: (uid: string, transaction: NewTransaction) => Promise<void>,
+  addTransaction: (uid: string, transaction: NewTransaction) => Promise<unknown>,
 ) {
   const ranForUid = useRef<string | null>(null)
 

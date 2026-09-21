@@ -1,4 +1,6 @@
-import type { Account, Transaction } from '../types'
+import { debtPaidAmount, debtRemaining } from './debts'
+import { DEBT_DIRECTION_LABELS } from '../types'
+import type { Account, Debt, Person, Transaction } from '../types'
 
 function escapeCsvField(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -22,6 +24,37 @@ export function transactionsToCsv(transactions: Transaction[], accounts: Account
     (t.tags ?? []).join('; '),
     t.excluded ? 'Yes' : '',
     t.note,
+  ])
+  return [header, ...rows]
+    .map((row) => row.map((cell) => escapeCsvField(String(cell))).join(','))
+    .join('\n')
+}
+
+export function debtsToCsv(debts: Debt[], people: Person[]): string {
+  const personName = (id: string) => people.find((p) => p.id === id)?.name ?? id
+  const header = [
+    'Person',
+    'Direction',
+    'Amount',
+    'Paid',
+    'Remaining',
+    'Currency',
+    'Started',
+    'Due date',
+    'Settled',
+    'Note',
+  ]
+  const rows = debts.map((d) => [
+    personName(d.personId),
+    DEBT_DIRECTION_LABELS[d.direction],
+    d.amount.toFixed(2),
+    debtPaidAmount(d).toFixed(2),
+    debtRemaining(d).toFixed(2),
+    d.currency,
+    d.date,
+    d.dueDate ?? '',
+    d.settled ? 'Yes' : 'No',
+    d.note ?? '',
   ])
   return [header, ...rows]
     .map((row) => row.map((cell) => escapeCsvField(String(cell))).join(','))

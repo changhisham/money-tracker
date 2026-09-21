@@ -44,5 +44,25 @@ export function usePreferences(uid: string | undefined) {
     await setDoc(doc(db, 'users', uid, ...DOC_PATH), { [kind]: next }, { merge: true })
   }
 
-  return { preferences, loading, setDefaultCurrency, setDisplayName, addCustomCategory, removeCustomCategory }
+  async function setExchangeRate(uid: string, currency: string, rate: number) {
+    const next = { ...(preferences.exchangeRates ?? {}), [currency]: rate }
+    await setDoc(doc(db, 'users', uid, ...DOC_PATH), { exchangeRates: next }, { merge: true })
+  }
+
+  async function removeExchangeRate(uid: string, currency: string) {
+    const next = { ...(preferences.exchangeRates ?? {}) }
+    delete next[currency]
+    await setDoc(doc(db, 'users', uid, ...DOC_PATH), { exchangeRates: next }, { merge: true })
+  }
+
+  return {
+    preferences,
+    loading,
+    setDefaultCurrency,
+    setDisplayName,
+    addCustomCategory,
+    removeCustomCategory,
+    setExchangeRate,
+    removeExchangeRate,
+  }
 }

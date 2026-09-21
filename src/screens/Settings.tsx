@@ -9,6 +9,7 @@ import { deleteAllTransactions } from '../hooks/useTransactions'
 import { deleteAllBudgets } from '../hooks/useBudgets'
 import { deleteAllAccounts } from '../hooks/useAccounts'
 import { deleteAllPeople } from '../hooks/usePeople'
+import { deleteAllDebts } from '../hooks/useDebts'
 import { APP_VERSION, DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES, DEFAULT_CURRENCIES } from '../types'
 import type { Preferences } from '../types'
 import { categoryIcon, isKnownExpenseCategory, isKnownIncomeCategory } from '../utils/categoryIcons'
@@ -32,6 +33,8 @@ interface Props {
   onRemoveExpenseCategory: (category: string) => Promise<void>
   onAddIncomeCategory: (category: string) => Promise<void>
   onRemoveIncomeCategory: (category: string) => Promise<void>
+  onSetExchangeRate: (currency: string, rate: number) => Promise<void>
+  onRemoveExchangeRate: (currency: string) => Promise<void>
   onOpenAccounts: () => void
   onOpenLoans: () => void
 }
@@ -49,11 +52,14 @@ export function Settings({
   onRemoveExpenseCategory,
   onAddIncomeCategory,
   onRemoveIncomeCategory,
+  onSetExchangeRate,
+  onRemoveExchangeRate,
   onOpenAccounts,
   onOpenLoans,
 }: Props) {
   const { logOut } = useAuth()
   const currencyOptions = [...new Set([...knownCurrencies, ...DEFAULT_CURRENCIES])]
+  const defaultCurrency = preferences.defaultCurrency ?? currencyOptions[0]
   const [editingName, setEditingName] = useState(false)
   const [displayName, setDisplayNameInput] = useState(preferences.displayName ?? '')
   const [newExpenseCategory, setNewExpenseCategory] = useState('')
@@ -61,6 +67,17 @@ export function Settings({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const otherCurrencies = currencyOptions.filter((c) => c !== defaultCurrency)
+  const [rateCurrency, setRateCurrency] = useState(otherCurrencies[0] ?? '')
+  const [rateValue, setRateValue] = useState('')
+
+  async function handleSaveRate(e: FormEvent) {
+    e.preventDefault()
+    const rate = Number(rateValue)
+    if (!rateCurrency || !rate || rate <= 0) return
+    await onSetExchangeRate(rateCurrency, rate)
+    setRateValue('')
+  }
 
   const memberSince = auth.currentUser?.metadata.creationTime
     ? format(new Date(auth.currentUser.metadata.creationTime), 'MMMM yyyy')
@@ -98,6 +115,7 @@ export function Settings({
       await deleteAllBudgets(uid)
       await deleteAllAccounts(uid)
       await deleteAllPeople(uid)
+      await deleteAllDebts(uid)
       await deleteUser(auth.currentUser!)
     } catch (err) {
       const code = (err as { code?: string }).code
@@ -211,6 +229,68 @@ export function Settings({
         </div>
 
         <div className="rounded-2xl border border-line bg-surface p-4">
+          <h2 className="text-sm font-medium text-ink-soft">Exchange rates</h2>
+          <p className="mb-3 text-xs text-ink-faint">
+            Manual rates to {defaultCurrency}, used to show a combined total when money owed spans currencies.
+          </p>
+          {otherCurrencies.length === 0 ? (
+            <p className="text-sm text-ink-faint">Add another currency (via an account) to set a rate for it.</p>
+          ) : (
+            <>
+              <ul className="mb-3 space-y-1.5">
+                {Object.entries(preferences.exchangeRates ?? {}).map(([currency, rate]) => (
+                  <li key={currency} className="flex items-center justify-between gap-2 text-sm text-ink-soft">
+                    <span>
+                      1 {currency} = {rate} {defaultCurrency}
+                    </span>
+                    <button
+                      onClick={() => onRemoveExchangeRate(currency)}
+                      aria-label={`Remove ${currency} rate`}
+                      className="text-ink-faint hover:text-red-400"
+                    >
+                      🗑
+                    </button>
+                  </li>
+                ))}
+                {Object.keys(preferences.exchangeRates ?? {}).length === 0 && (
+                  <p className="text-sm text-ink-faint">No rates set yet.</p>
+                )}
+              </ul>
+              <form onSubmit={handleSaveRate} className="flex gap-2">
+                <select
+                  value={rateCurrency}
+                  onChange={(e) => setRateCurrency(e.target.value)}
+                  className="rounded-xl border border-line bg-base px-2 py-2.5 text-sm text-ink outline-none focus:border-emerald-500"
+                >
+                  {otherCurrencies.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.0001"
+                  min="0"
+                  placeholder={`Rate to ${defaultCurrency}`}
+                  value={rateValue}
+                  onChange={(e) => setRateValue(e.target.value)}
+                  className="min-w-0 flex-1 rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!rateValue}
+                  className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-line bg-surface p-4">
           <h2 className="mb-3 text-sm font-medium text-ink-soft">Expense categories</h2>
           <ul className="mb-3 space-y-1.5">
             {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
@@ -302,7 +382,7 @@ export function Settings({
       <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4">
         <h2 className="mb-1 text-sm font-medium text-red-400">Danger zone</h2>
         <p className="mb-3 text-xs text-ink-faint">
-          Permanently deletes your account and all transactions, accounts, budgets and people. This
+          Permanently deletes your account and all transactions, accounts, budgets, people and debts. This
           cannot be undone.
         </p>
         {deleteError && <p className="mb-3 text-xs text-red-400">{deleteError}</p>}
@@ -321,7 +401,7 @@ export function Settings({
       {confirmingDelete && (
         <ConfirmDialog
           title="Delete your account?"
-          message="This permanently deletes your account along with every transaction, account, budget, and person. This cannot be undone."
+          message="This permanently deletes your account along with every transaction, account, budget, person, and debt. This cannot be undone."
           confirmLabel={deleting ? 'Deleting…' : 'Delete everything'}
           onConfirm={handleDeleteAccount}
           onCancel={() => setConfirmingDelete(false)}

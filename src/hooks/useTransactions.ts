@@ -35,10 +35,11 @@ export function useTransactions(uid: string | undefined) {
   }, [uid])
 
   async function addTransaction(uid: string, transaction: NewTransaction) {
-    await addDoc(collection(db, 'users', uid, 'transactions'), {
+    const ref = await addDoc(collection(db, 'users', uid, 'transactions'), {
       ...transaction,
       createdAt: Date.now(),
     })
+    return ref.id
   }
 
   async function deleteTransaction(uid: string, id: string) {

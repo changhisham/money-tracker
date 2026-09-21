@@ -8,6 +8,7 @@ import { SummaryCards } from '../components/SummaryCards'
 import { CategoryChart } from '../components/CategoryChart'
 import { SpendingTrend } from '../components/SpendingTrend'
 import { InsightsCard } from '../components/InsightsCard'
+import { DebtsWidget } from '../components/DebtsWidget'
 import { AccountsOverview } from '../components/AccountsOverview'
 import { TransactionList } from '../components/TransactionList'
 import { getRange, shiftAnchor } from '../utils/dateRanges'
@@ -16,7 +17,7 @@ import { transactionsToCsv, downloadCsv } from '../utils/csv'
 import { categoryIcon } from '../utils/categoryIcons'
 import { computeAccountBalances } from '../utils/accountBalances'
 import { upcomingOccurrences } from '../utils/recurring'
-import type { Account, Budget, NewTransaction, Transaction, TransactionType, Period } from '../types'
+import type { Account, Budget, Debt, NewTransaction, Person, Transaction, TransactionType, Period } from '../types'
 
 const ALL_CATEGORIES = '__all__'
 const ALL_TYPES = '__all__'
@@ -33,14 +34,29 @@ interface Props {
   transactions: Transaction[]
   accounts: Account[]
   budgets: Budget[]
+  people: Person[]
+  debts: Debt[]
   name: string
   email: string | null
   onDelete: (id: string) => void
   onEdit: (transaction: Transaction) => void
-  onAddTransaction: (transaction: NewTransaction) => Promise<void>
+  onAddTransaction: (transaction: NewTransaction) => Promise<unknown>
+  onOpenPeople: () => void
 }
 
-export function Dashboard({ transactions, accounts, budgets, name, email, onDelete, onEdit, onAddTransaction }: Props) {
+export function Dashboard({
+  transactions,
+  accounts,
+  budgets,
+  people,
+  debts,
+  name,
+  email,
+  onDelete,
+  onEdit,
+  onAddTransaction,
+  onOpenPeople,
+}: Props) {
   const [period, setPeriod] = useState<Period>('monthly')
   const [anchor, setAnchor] = useState(new Date())
   const [search, setSearch] = useState('')
@@ -176,6 +192,8 @@ export function Dashboard({ transactions, accounts, budgets, name, email, onDele
         />
         <UpNext occurrences={upcoming} accounts={accounts} onLogNow={logNow} />
       </div>
+
+      <DebtsWidget debts={debts} people={people} transactions={transactions} onOpenPeople={onOpenPeople} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
